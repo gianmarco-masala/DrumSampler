@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FILTERGRAPH>
+  <FILTER uid="2" x="0.39625" y="0.1108870967741935" DPIAware="0.0">
+    <PLUGIN name="MIDI Input" descriptiveName="" format="Internal" category="I/O devices"
+            manufacturer="JUCE" version="1.0" file="" uid="a9e4f9eb" isInstrument="0"
+            fileTime="0" infoUpdateTime="0" numInputs="0" numOutputs="0"
+            isShell="0"/>
+    <STATE>0.</STATE>
+    <LAYOUT>
+      <INPUTS>
+        <BUS index="0" layout="disabled"/>
+      </INPUTS>
+      <OUTPUTS>
+        <BUS index="0" layout="disabled"/>
+      </OUTPUTS>
+    </LAYOUT>
+  </FILTER>
+  <FILTER uid="3" x="0.3825" y="0.8225806451612904" DPIAware="0.0">
+    <PLUGIN name="Audio Output" descriptiveName="" format="Internal" category="I/O devices"
+            manufacturer="JUCE" version="1.0" file="" uid="724248cb" isInstrument="0"
+            fileTime="0" infoUpdateTime="0" numInputs="2" numOutputs="0"
+            isShell="0"/>
+    <STATE>0.</STATE>
+    <LAYOUT>
+      <INPUTS>
+        <BUS index="0" layout="L R"/>
+      </INPUTS>
+      <OUTPUTS>
+        <BUS index="0" layout="disabled"/>
+      </OUTPUTS>
+    </LAYOUT>
+  </FILTER>
+  <FILTER uid="5" x="0.3825" y="0.4375" DPIAware="0.0">
+    <PLUGIN name="DrumSampler" format="VST3" category="Instrument|Synth"
+            manufacturer="Chocholate Audio" version="0.1" file="D:\Developer\DrumSampler\Builds\VisualStudio2019\x64\Debug\VST3\DrumSampler.vst3"
+            uid="ba0215ec" isInstrument="1" fileTime="176234dc9a4" infoUpdateTime="176234e2120"
+            numInputs="0" numOutputs="2" isShell="0"/>
+    <STATE>667.VMjLgHo....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9PSL13hUMczXWEjKt3hYt3hKt.kKt3hKt3BS5gEcyQjKtPjKnYTR5AkaA4hKtfjKVESSVElKt.kKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKt3RcUMTRSgTbB4hKtXWdOMCLFElYXcUV30zUZUGMV8DZDk1R1gjPHsFMwfUcQYkVzMlUOgFUEUkQvHjSncSZOYlcCEEdUcUXSUjUgY2cVkEdYUTUSQyPOAUQpQUPvPDRuEkUOglKWM0YMczXqkzQSsVVWkkbIIDRwTjQgASUV8DZDk1R1gDdKkicCQUPIUETMEjTZoFLogjcvPEV4E0UYgWPUgEcIIDRwTjQgASUV8DZtj1R1gDdKkicCQUPIUETMEjTZoFLogjcvPEV4E0UYgGLTMldUwFR0MyPOUGTpIFLvDCUmAiQhIWUrIlUQACU43hKt3hKt3hKt3hKt3FUUMTUDQEdqw1XmE0UYQTQFM1YAAkKAgDUjYWQwHVdAAkKAwjKtLlKt3hKt3hKt3hYRUUSTEETIckVwTjQisVTTgkdEYDOujzPu0Fbu4VYtQmO77hUSQ0LPwVcmklaSQWXzUlO..</STATE>
+    <LAYOUT>
+      <INPUTS/>
+      <OUTPUTS>
+        <BUS index="0" layout="L R"/>
+        <BUS index="1" layout="L R"/>
+        <BUS index="2" layout="L R"/>
+        <BUS index="3" layout="L R"/>
+        <BUS index="4" layout="L R"/>
+        <BUS index="5" layout="L R"/>
+        <BUS index="6" layout="L R"/>
+        <BUS index="7" layout="L R"/>
+      </OUTPUTS>
+    </LAYOUT>
+  </FILTER>
+  <CONNECTION srcFilter="2" srcChannel="4096" dstFilter="5" dstChannel="4096"/>
+  <CONNECTION srcFilter="5" srcChannel="0" dstFilter="3" dstChannel="0"/>
+  <CONNECTION srcFilter="5" srcChannel="1" dstFilter="3" dstChannel="1"/>
+</FILTERGRAPH>
