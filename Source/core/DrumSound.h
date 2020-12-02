@@ -10,15 +10,15 @@
 
 
 class DrumSound : public SynthesiserSound
-				, private Thread
+	, private Thread
 {
 public:
-	DrumSound()  : Thread("DrumSound Thread")
-	{	
+	DrumSound() : Thread("DrumSound Thread")
+	{
 		formatManager.registerBasicFormats();
 		startThread();
 	}
-	
+
 	~DrumSound()
 	{
 		stopThread(4000);
@@ -27,7 +27,7 @@ public:
 	void setName(String name) { chName = name; };
 
 	void setIndex(int i) { index = i; }
-	
+
 	void setVelocityRange(Range<float> range)
 	{
 		auto start = range.getStart();
@@ -37,14 +37,14 @@ public:
 		velocity.setEnd(end);
 	}
 
-	void setMidiNote(int noteToSet) 
+	void setMidiNote(int noteToSet)
 	{
 		playingMidiNote = noteToSet;
 		return;
 	}
 
-	bool appliesToNote(int midiNoteNumber) override 
-	{	
+	bool appliesToNote(int midiNoteNumber) override
+	{
 		if (midiNoteNumber == playingMidiNote)
 			return true;
 		else
@@ -59,13 +59,13 @@ public:
 		return appliesToMidiNote && isInVelocityRange;
 	}
 
-	bool appliesToChannel(int midiChannel) override	{	return true;	}
+	bool appliesToChannel(int midiChannel) override { return true; }
 
 	File workingDirectory;
 
 private:
 	void run()
-	{	
+	{
 		while (!threadShouldExit())
 		{
 			if (!isPathSet) {
@@ -74,10 +74,10 @@ private:
 			}
 			wait(500);
 		}
-    }
+	}
 
 	void setPath()
-	{	
+	{
 		String msg;
 		auto parentDir = workingDirectory.getCurrentWorkingDirectory();
 		auto dir = parentDir.getChildFile("../Samples");
@@ -87,22 +87,22 @@ private:
 																						// velocity: il limite inferiore del range
 																						// estensione: wav
 		path << dir.getFullPathName() << dir.getSeparatorChar()
-			 << chName << "_" 
-			 << index << "_" 
-			 << roundFloatToInt(velocity.getStart()*127) 
-			 << ".wav";
-		
+			<< chName << "_"
+			<< index << "_"
+			<< roundFloatToInt(velocity.getStart() * 127)
+			<< ".wav";
+
 		msg << "\nLoading Sample: \n" << path << "\n";
 		Logger::getCurrentLogger()->writeToLog(msg);
 
 		isPathSet = true;
 	}
-//cartella kit
-	// Cartella instrument
-		//	cartella articulation
-			//	file wav ordinati per mic velocity e indice
+	//cartella kit
+		// Cartella instrument
+			//	cartella articulation
+				//	file wav ordinati per mic velocity e indice
 
-// in base a cosa trovo dentro la cartella mi ricavo num velocity ranges e round robin 
+	// in base a cosa trovo dentro la cartella mi ricavo num velocity ranges e round robin 
 
 
 	void readFromPath(String pathToOpen)
@@ -111,22 +111,22 @@ private:
 		{
 			File file(pathToOpen);
 			reader.reset(formatManager.createReaderFor(file));
-			
+
 
 			if (reader.get() != nullptr)
 			{
 				if (reader->sampleRate > 0 && reader->lengthInSamples > 0)
 				{
 					lenght = (int)reader->lengthInSamples;
-					
+
 					data.reset(new AudioBuffer<float>(jmin(2, (int)reader->numChannels), lenght + 4));
 
 					reader->read(data.get(),
-								 0,
-								 lenght,
-								 0,
-								 true,
-								 true);
+						0,
+						lenght,
+						0,
+						true,
+						true);
 				}
 			}
 		}
@@ -139,7 +139,7 @@ private:
 	String path, chName;
 	int index;
 	std::unique_ptr<AudioBuffer<float>> data;
-	
+
 	BigInteger midiNotes;
 	int playingMidiNote = 0;
 	Range<float> velocity;
@@ -155,7 +155,7 @@ private:
 	//attackSamples = 0, releaseSamples = 0;
 	//double attackTimeSecs = 0, releaseTimeSecs = 0;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DrumSound)
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSound)
 };
 
 
@@ -166,7 +166,7 @@ class DrumVoice : public SynthesiserVoice
 public:
 	DrumVoice()
 	{
-	//	env = new ADSR();
+		//	env = new ADSR();
 	}
 
 	~DrumVoice()
@@ -183,35 +183,35 @@ public:
 	{
 		if (auto* sound = dynamic_cast<const DrumSound*> (s))
 		{
-//			auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get());
+			//			auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get());
 
-			// Collego i puntatori ai rispettivi valori
-			//auto initVoice = [this] (DrumVoice& voice)
-			//{
-				semitones = *coarse;
-				cents = *fine;
-				//	env = playingSound->getEnvelope();
-				//	env->reset();
-			//	env->gate(true);
-			//};
-			//semitones = *coarseTuning;
-			//cents = *fineTuning;
+						// Collego i puntatori ai rispettivi valori
+						//auto initVoice = [this] (DrumVoice& voice)
+						//{
+			semitones = *coarse;
+			cents = *fine;
+			//	env = playingSound->getEnvelope();
+			//	env->reset();
+		//	env->gate(true);
+		//};
+		//semitones = *coarseTuning;
+		//cents = *fineTuning;
 
-			// Apro l'inviluppo
+		// Apro l'inviluppo
 //			env = playingSound->getEnvelope();
 //			env->reset();
 		//	env->gate(true);
-			
+
 			//==============================================================
-			attackSamples = roundToInt(attackTime  * sound->reader->sampleRate);
-			releaseSamples = roundToInt(releaseTime  * sound->reader->sampleRate);
+			attackSamples = roundToInt(attackTime * sound->reader->sampleRate);
+			releaseSamples = roundToInt(releaseTime * sound->reader->sampleRate);
 			pitchRatio = std::pow(2.0, (semitones + cents * 0.01) / 12.0)
 				* sound->reader->sampleRate / getSampleRate();
 
 			sourceSamplePosition = 0.0;
 			lgain = 1.0f/*velocity*/;
 			rgain = 1.0f/*velocity*/;
-			
+
 			isInAttack = (attackSamples > 0);
 			isInRelease = false;
 
@@ -249,10 +249,10 @@ public:
 		else
 		{
 			/*if (env->getState() == ADSR::env_idle)*/
-				clearCurrentNote();
+			clearCurrentNote();
 		}
 	}
-	
+
 	void renderNextBlock(AudioSampleBuffer& outputBuffer, int startSample, int numSamples) override
 	{
 		if (auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get()))
@@ -276,7 +276,7 @@ public:
 
 				l *= lgain * jmin(1.0f - *pan, 1.0f);
 				r *= rgain * jmin(1.0f + *pan, 1.0f);
-				
+
 				if (isInAttack)
 				{
 					l *= attackReleaseLevel;
@@ -320,19 +320,22 @@ public:
 				if (sourceSamplePosition > playingSound->lenght)
 				{
 					stopNote(0.0f, false);
-				//	env->gate(false);
+					//	env->gate(false);
 					break;
 				}
 			}
 		}
 
 	}
-	
+
 	void pitchWheelMoved(int newPitchWheelValue) override {}
 
 	void controllerMoved(int controllerNumber, int newControllerValue) {}
-	
-	float *pan, *coarse, *fine;
+
+	std::atomic<float>* pan;
+	std::atomic<float>* coarse;
+	std::atomic<float>* fine;
+	//float *pan, *coarse, *fine;
 //	ADSR *env;
 
 private:

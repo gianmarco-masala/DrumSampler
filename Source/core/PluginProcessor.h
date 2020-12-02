@@ -7,18 +7,25 @@
 #include "DrumSynth.h"
 //#include "../envelope/ADSR.h"
 
+struct ChannelNames {
+	const String outputs[MAX_INSTRUMENTS] =
+	{
+		"Kick",
+		"Snare",
+		"Tom1",
+		"Tom2",
+		"Tom3",
+		"HiHat",
+		"Overhead",
+		"Empty",
+	};
+};
+
 class DrumProcessor : public AudioProcessor
 {
 public:
-	enum
-	{
-		maxMidiChannel = 8
-	};
-
 	DrumProcessor();
 	~DrumProcessor();
-
-	//==============================================================================
 
 	void prepareToPlay(double sampleRate, int samplesPerBlock) override;
 	void releaseResources() override;
@@ -29,12 +36,8 @@ public:
 
 	void processBlock(AudioSampleBuffer&, MidiBuffer&) override;
 
-	//==============================================================================
-
 	AudioProcessorEditor* createEditor() override;
 	bool hasEditor() const override { return true; }
-
-	//==============================================================================
 
 	const String getName() const override { return JucePlugin_Name; }
 
@@ -43,27 +46,25 @@ public:
 	bool isMidiEffect() const override { return false; }
 	double getTailLengthSeconds() const override { return 0.0; }
 
-	//==============================================================================
-
 	int getNumPrograms() override { return 1; }
 	int getCurrentProgram() override { return 0; }
 	void setCurrentProgram(int) override {}
 	const String getProgramName(int) override { return {}; }
 	void changeProgramName(int, const String&) override {}
 
-	//==============================================================================
 	void getStateInformation(MemoryBlock& destData) override;
 	void setStateInformation(const void* data, int sizeInBytes) override;
 
 	bool canAddBus(bool isInput) const override
 	{
-		return (!isInput && getBusCount(false) < maxMidiChannel);
+		return (!isInput && getBusCount(false) < MAX_INSTRUMENTS);
 	}
 	bool canRemoveBus(bool isInput) const override
 	{
 		return (!isInput && getBusCount(false) > 1);
 	}
 
+	// CUSTOM METHODS
 	//void createParameters(AudioProcessorValueTreeState& parameters, int i);
 
 	void attachMasterParams();
@@ -87,7 +88,7 @@ public:
 
 	int* getSoloChannel()
 	{
-		for (auto channel = 0; channel < maxMidiChannel; channel++)
+		for (auto channel = 0; channel < MAX_INSTRUMENTS; channel++)
 		{
 			if (isSoloEnabled[channel])
 				return &channel;
@@ -97,9 +98,9 @@ public:
 
 	bool allSoloDisabled()
 	{
-		for (auto channel = 0; channel < maxMidiChannel; channel++)
+		for (auto channel = 0; channel < MAX_INSTRUMENTS; channel++)
 		{
-			if (outputs[channel] == "Empty")
+			if (chNames.outputs[channel] == "Empty")
 				break;
 			else
 			{
@@ -112,36 +113,19 @@ public:
 
 	void setLearnFromMidi(bool isLearnSet, int channel) { synth[channel]->isMidiLearning = isLearnSet; }
 
-	const String outputs[maxMidiChannel] =
-	{
-		"Kick",
-		"Snare",
-		//"Tom 1",
-		//"Tom 2",
-		//"Tom 3",
-		//"HiHat",
-		//"Overhead",
-		"Empty",
-		"Empty",
-		"Empty",
-		"Empty",
-		"Empty",
-		"Empty",
-	};
-	String paramID = "p";
-
 	OwnedArray<DrumSynth> synth;
+	ChannelNames chNames;
 
 private:
 	juce::AudioProcessorValueTreeState parameters;
 	//UndoManager undoManager;
-	String channelName;
+	//String channelName;
 	int soloChannel;
 	bool isConstructorInitialised;
 
 	// Pointers to parameters, used by processor
-	//std::atomic<float>* level[maxMidiChannel];
-	//std::atomic<float>* pan[maxMidiChannel];
+	std::atomic<float>* level[MAX_INSTRUMENTS];
+	std::atomic<float>* pan[MAX_INSTRUMENTS];
 	std::atomic<float>* masterLevel = nullptr;
 	std::atomic<float>* masterPan = nullptr;
 	std::atomic<float>* masterMute = nullptr;
@@ -149,33 +133,16 @@ private:
 	//==============================================================================
 
 	// Creates fades in audio blocks when changing levels
-	float previousChannelGain[maxMidiChannel];
+	float previousChannelGain[MAX_INSTRUMENTS];
 	float previousMasterGain;
 
 	// Mute and solo booleans
-	bool isChannelMuteEnabled[maxMidiChannel];
-	bool isSoloEnabled[maxMidiChannel];
+	bool isChannelMuteEnabled[MAX_INSTRUMENTS];
+	bool isSoloEnabled[MAX_INSTRUMENTS];
 	bool isMasterMuteEnabled = false;
 
 	// Need this to prevent creating master's parameters twice
 	bool isMasterSet = false;
-
-	//juce::AudioProcessorValueTreeState::ParameterLayout parameterLayout = {
-	//	std::make_unique<AudioParameterFloat>
-	//						   ("pMasterLevel",
-	//							"Master Level",
-	//							0.0f, 1.0f, 1.0f),
-	//	std::make_unique<AudioParameterFloat>
-	//								 ("pMasterPan",
-	//								 "Master Pan",
-	//								 NormalisableRange<float>(-1.0f, 1.0f),			// range [-1; +1]
-	//								 0.0f,											// default value
-	//								 "",											// parameter label (suffix)
-	//								 AudioProcessorParameter::genericParameter,	    // category
-	//								 nullptr,
-	//								 nullptr)
-
-	//};
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumProcessor)
 };

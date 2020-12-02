@@ -10,7 +10,7 @@ class DrumProcessor;
 typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
-class  DrumEditor : 
+class  DrumEditor :
 	public AudioProcessorEditor,
 	public Slider::Listener,
 	public Button::Listener,
@@ -18,21 +18,21 @@ class  DrumEditor :
 {
 public:
 
-	 DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts);
+	DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts);
 
 	void paint(Graphics&) override;
 	void resized() override;
 
 private:
 
-//	Slider::Listener methods
+	//	Slider::Listener methods
 	void sliderValueChanged(Slider* slider) override;
 	void sliderDragStarted(Slider* slider) override;
 	void sliderDragEnded(Slider* slider) override;
 
-//  Button::Listener method
+	//  Button::Listener method
 	void buttonClicked(Button* button) override;
-	
+
 	// Timer method
 	void timerCallback() override;
 
@@ -61,32 +61,32 @@ private:
 		button.addListener(this);
 	}
 
-	void initChannel							(AudioProcessorValueTreeState& vts, 
-												  String& channelName, 
-												  int index,
-												  GroupComponent* group, 
-												  Label* levelLabel, 
-												  Label* panLabel,
-												  Slider* levelSlider,
-												  Slider* panSlider,
-												  Button* muteButton,
-												  Button* soloButton,
-												  Button* midiLearnButton,
-												  SliderAttachment* levelAttachment,
-												  SliderAttachment* panAttachment,
-												  ButtonAttachment* muteAttachment,
-												  ButtonAttachment* soloAttachment,
-												  ButtonAttachment* midiLearnAttachment);
+	void initChannel(AudioProcessorValueTreeState& vts,
+		String& channelName,
+		int index,
+		GroupComponent* group,
+		Label* levelLabel,
+		Label* panLabel,
+		Slider* levelSlider,
+		Slider* panSlider,
+		Button* muteButton,
+		Button* soloButton,
+		Button* midiLearnButton,
+		SliderAttachment* levelAttachment,
+		SliderAttachment* panAttachment,
+		ButtonAttachment* muteAttachment,
+		ButtonAttachment* soloAttachment,
+		ButtonAttachment* midiLearnAttachment);
 
-	void drawChannel ( int startX,
-		Component* group, 
-												  Component* levelLabel, 
-												  Component* panLabel,
-												  Component* levelSlider,
-												  Component* panSlider,
-												  Component* muteButton,
-												  Component* soloButton,
-												  Component* midiLearnButton);
+	void drawChannel(int startX,
+		Component* group,
+		Component* levelLabel,
+		Component* panLabel,
+		Component* levelSlider,
+		Component* panSlider,
+		Component* muteButton,
+		Component* soloButton,
+		Component* midiLearnButton);
 
 	DrumProcessor& processor;
 	AudioProcessorValueTreeState& valueTreeState;
@@ -103,18 +103,18 @@ private:
 		group7,
 		group8,
 		masterGroup;
-	
+
 	Slider
-		levelSlider1, 
-		levelSlider2, 
-		levelSlider3, 
-		levelSlider4, 
-		levelSlider5, 
-		levelSlider6, 
-		levelSlider7, 
-		levelSlider8, 
+		levelSlider1,
+		levelSlider2,
+		levelSlider3,
+		levelSlider4,
+		levelSlider5,
+		levelSlider6,
+		levelSlider7,
+		levelSlider8,
 		masterLevelSlider,
-		
+
 		panSlider1,
 		panSlider2,
 		panSlider3,
@@ -125,17 +125,17 @@ private:
 		panSlider8,
 		masterPanSlider;
 
-	std::unique_ptr<SliderAttachment> 
-		levelAttachment1, 
-		levelAttachment2, 
-		levelAttachment3, 
-		levelAttachment4, 
-		levelAttachment5, 
-		levelAttachment6, 
-		levelAttachment7, 
-		levelAttachment8, 
+	std::unique_ptr<SliderAttachment>
+		levelAttachment1,
+		levelAttachment2,
+		levelAttachment3,
+		levelAttachment4,
+		levelAttachment5,
+		levelAttachment6,
+		levelAttachment7,
+		levelAttachment8,
 		masterLevelAttachment,
-		
+
 		panAttachment1,
 		panAttachment2,
 		panAttachment3,
@@ -146,7 +146,7 @@ private:
 		panAttachment8,
 		masterPanAttachment;
 
-	Label 
+	Label
 		levelLabel1,
 		levelLabel2,
 		levelLabel3,
@@ -156,7 +156,7 @@ private:
 		levelLabel7,
 		levelLabel8,
 		masterLevelLabel,
-		
+
 		panLabel1,
 		panLabel2,
 		panLabel3,
@@ -207,16 +207,16 @@ private:
 		muteAttachment7,
 		muteAttachment8,
 		masterMuteAttachment,
-		
-		soloAttachment1, 
-		soloAttachment2, 
-		soloAttachment3, 
-		soloAttachment4, 
-		soloAttachment5, 
-		soloAttachment6, 
-		soloAttachment7, 
-		soloAttachment8, 
-		
+
+		soloAttachment1,
+		soloAttachment2,
+		soloAttachment3,
+		soloAttachment4,
+		soloAttachment5,
+		soloAttachment6,
+		soloAttachment7,
+		soloAttachment8,
+
 		midiLearnAttachment1,
 		midiLearnAttachment2,
 		midiLearnAttachment3,
@@ -226,5 +226,5 @@ private:
 		midiLearnAttachment7,
 		midiLearnAttachment8;
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR( DrumEditor)
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumEditor)
 };

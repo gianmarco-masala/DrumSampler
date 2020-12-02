@@ -2,9 +2,9 @@
 #include "../gui/PluginEditor.h"
 
 //==============================================================================
-DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts)
-    : AudioProcessorEditor (parent)
-	, processor (parent)
+DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
+	: AudioProcessorEditor(parent)
+	, processor(parent)
 	, valueTreeState(vts)
 {
 	Logger::getCurrentLogger()->writeToLog(">>>>>>>>> Editor constructor called.");
@@ -12,11 +12,12 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 	const MessageManagerLock mmLock;
 	startTimer(100);
 
-	// CHANNELS ==============================================================================================
+	// CHANNELS
 	auto index = 0;
+	ChannelNames chNames;
 
 	// CANALE 1
-	auto name = processor.outputs[index];
+	auto name = chNames.outputs[index];
 	auto curGroup = &group1;
 	auto curLevelLabel = &levelLabel1;
 	auto curPanLabel = &panLabel1;
@@ -31,11 +32,11 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 	auto curSoloAttach = soloAttachment1.get();
 	auto curLearnAttach = midiLearnAttachment1.get();
 
-	initChannel (vts, name, ++index, curGroup, curLevelLabel, curPanLabel, curLevelSlider, curPanSlider, curMuteButton, 
-				 curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
+	initChannel(vts, name, ++index, curGroup, curLevelLabel, curPanLabel, curLevelSlider, curPanSlider, curMuteButton,
+		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// CANALE 2
-	name = processor.outputs[index];
+	name = chNames.outputs[index];
 	curGroup = &group2;
 	curLevelLabel = &levelLabel2;
 	curPanLabel = &panLabel2;
@@ -54,7 +55,7 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// CANALE 3
-	name = processor.outputs[index];
+	name = chNames.outputs[index];
 	curGroup = &group3;
 	curLevelLabel = &levelLabel3;
 	curPanLabel = &panLabel3;
@@ -73,7 +74,7 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// CANALE 4
-	name = processor.outputs[index];
+	name = chNames.outputs[index];
 	curGroup = &group4;
 	curLevelLabel = &levelLabel4;
 	curPanLabel = &panLabel4;
@@ -92,7 +93,7 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// CANALE 5
-	name = processor.outputs[index];
+	name = chNames.outputs[index];
 	curGroup = &group5;
 	curLevelLabel = &levelLabel5;
 	curPanLabel = &panLabel5;
@@ -111,7 +112,7 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// CANALE 6
-	name = processor.outputs[index];
+	name = chNames.outputs[index];
 	curGroup = &group6;
 	curLevelLabel = &levelLabel6;
 	curPanLabel = &panLabel6;
@@ -130,7 +131,7 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// CANALE 7
-	name = processor.outputs[index];
+	name = chNames.outputs[index];
 	curGroup = &group7;
 	curLevelLabel = &levelLabel7;
 	curPanLabel = &panLabel7;
@@ -149,7 +150,7 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// CANALE 8
-	name = processor.outputs[index];
+	name = chNames.outputs[index];
 	curGroup = &group8;
 	curLevelLabel = &levelLabel8;
 	curPanLabel = &panLabel8;
@@ -185,13 +186,13 @@ DrumEditor::DrumEditor (DrumProcessor& parent, AudioProcessorValueTreeState& vts
 		curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
 	// Window size
-    setSize (1000, 600);
+	setSize(1000, 600);
 }
 
 //==============================================================================
-void  DrumEditor::paint (Graphics& g)
+void  DrumEditor::paint(Graphics& g)
 {
-    g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
+	g.fillAll(getLookAndFeel().findColour(ResizableWindow::backgroundColourId));
 }
 
 void  DrumEditor::resized()
@@ -318,17 +319,17 @@ void  DrumEditor::timerCallback()
 {
 	repaint();
 
-		if (!processor.synth[0]->isMidiLearning)
-		{
-			midiLearnButton1.setButtonText(TRANS("Learn"));
-			midiLearnButton1.setToggleState(false, dontSendNotification);
-		}
-		if (!processor.synth[1]->isMidiLearning)
-		{
-			midiLearnButton2.setButtonText(TRANS("Learn"));
-			midiLearnButton2.setToggleState(false, dontSendNotification);
-		}
-		// ...
+	if (!processor.synth[0]->isMidiLearning)
+	{
+		midiLearnButton1.setButtonText(TRANS("Learn"));
+		midiLearnButton1.setToggleState(false, dontSendNotification);
+	}
+	if (!processor.synth[1]->isMidiLearning)
+	{
+		midiLearnButton2.setButtonText(TRANS("Learn"));
+		midiLearnButton2.setToggleState(false, dontSendNotification);
+	}
+	// ...
 
 }
 
@@ -384,9 +385,9 @@ void  DrumEditor::buttonClicked(Button* button)
 	if (button == &muteButton7)
 		processor.setMuteEnabled(muteButton7.getToggleState(), i);
 	i++;
-    if (button == &muteButton8)
+	if (button == &muteButton8)
 		processor.setMuteEnabled(muteButton8.getToggleState(), i);
-	
+
 	if (button == &masterMuteButton)
 		processor.setMuteEnabled(masterMuteButton.getToggleState(), -1);
 
@@ -469,23 +470,23 @@ void  DrumEditor::buttonClicked(Button* button)
 }
 
 
-void  DrumEditor::initChannel(AudioProcessorValueTreeState& vts, 
-												  String& channelName, 
-												  int index,
-												  GroupComponent* group, 
-												  Label* levelLabel, 
-												  Label* panLabel,
-												  Slider* levelSlider,
-												  Slider* panSlider,
-												  Button* muteButton,
-												  Button* soloButton,
-												  Button* midiLearnButton,
-												  SliderAttachment* levelAttachment,
-												  SliderAttachment* panAttachment,
-												  ButtonAttachment* muteAttachment,
-												  ButtonAttachment* soloAttachment,
-												  ButtonAttachment* midiLearnAttachment
-												  )
+void  DrumEditor::initChannel(AudioProcessorValueTreeState& vts,
+	String& channelName,
+	int index,
+	GroupComponent* group,
+	Label* levelLabel,
+	Label* panLabel,
+	Slider* levelSlider,
+	Slider* panSlider,
+	Button* muteButton,
+	Button* soloButton,
+	Button* midiLearnButton,
+	SliderAttachment* levelAttachment,
+	SliderAttachment* panAttachment,
+	ButtonAttachment* muteAttachment,
+	ButtonAttachment* soloAttachment,
+	ButtonAttachment* midiLearnAttachment
+)
 {
 	String componentID, paramID, title;
 
@@ -562,7 +563,7 @@ void  DrumEditor::drawChannel(int startX,
 {
 	auto windowWidth = getWidth() - 30;
 	auto windowHeight = getHeight() - 30;
-	auto groupWidth = windowWidth / (processor.maxMidiChannel + 1); // per fare spazio al master
+	auto groupWidth = windowWidth / (MAX_INSTRUMENTS + 1); // per fare spazio al master
 	auto groupHeight = windowHeight;
 	auto buttonWidth = 50;
 	auto buttonHeight = 50;
@@ -600,7 +601,7 @@ void  DrumEditor::drawChannel(int startX,
 		buttonHeight);								// height
 
 	soloButton->setBounds(
-		muteButton->getX() + buttonWidth - blankSpace/2,			// x
+		muteButton->getX() + buttonWidth - blankSpace / 2,			// x
 		blankSpace + panSlider->getY() + panSlider->getHeight(),											// y
 		buttonWidth,									// width
 		buttonHeight);								// height

@@ -1,10 +1,7 @@
 #include "PluginProcessor.h"
 
-//using Parameter = AudioProcessorValueTreeState::Parameter;
-
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-	// forse qua potrei inizializzare le macro?
 	return new DrumProcessor();
 }
 
@@ -16,7 +13,9 @@ AudioProcessorEditor* DrumProcessor::createEditor()
 AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 {
 	AudioProcessorValueTreeState::ParameterLayout params;
-	//String paramID = "p";
+	String paramID = "p";
+	ChannelNames chNames;
+	auto outputs = chNames.outputs;
 
 	// Create Master params
 	params.add(std::make_unique<AudioParameterFloat>
@@ -33,65 +32,74 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 			false));
 
 	// Create channels params
-	//for (int i = 1; i < maxChannels; ++i) {
-	//	String curOut = outputs[i];
-	//	paramID.clear();
-	//	paramID << "p" << curOut;
+	for (int i = 0; i < MAX_INSTRUMENTS; i++) {
+		String curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
 
-	//	params.add(std::make_unique<AudioParameterFloat>
-	//		(paramID << "Level",
-	//			curOut << " Level",
-	//			0.0f, 1.0f, 1.0f)
-	//	);
-	//	curOut = outputs[i];
-	//	paramID.clear();
-	//	paramID << "p" << curOut;
+		params.add(std::make_unique<AudioParameterFloat>
+			(paramID << "Level",
+				curOut << " Level",
+				0.0f, 1.0f, 1.0f)
+		);
+		curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
 
-	//	params.add(std::make_unique<AudioParameterFloat>
-	//		(paramID << "Pan",
-	//			curOut << " Pan",
-	//			-1.0f, 1.0f, 0.0f)
-	//	);
-	//	curOut = outputs[i];
-	//	paramID.clear();
-	//	paramID << "p" << curOut;
+		params.add(std::make_unique<AudioParameterFloat>
+			(paramID << "Pan",
+				curOut << " Pan",
+				-1.0f, 1.0f, 0.0f)
+		);
+		curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
 
-	//	params.add(std::make_unique<AudioParameterBool>
-	//		(paramID << "Mute",
-	//			curOut << " Mute",
-	//			false)
-	//	);
-	//	curOut = outputs[i];
-	//	paramID.clear();
-	//	paramID << "p" << curOut;
+		params.add(std::make_unique<AudioParameterBool>
+			(paramID << "Mute",
+				curOut << " Mute",
+				false)
+		);
+		curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
 
-	//	params.add(std::make_unique<AudioParameterBool>
-	//		(paramID << "Solo",
-	//			curOut << " Solo",
-	//			false)
-	//	);
-	//	curOut = outputs[i];
-	//	paramID.clear();
-	//	paramID << "p" << curOut;
+		params.add(std::make_unique<AudioParameterBool>
+			(paramID << "Solo",
+				curOut << " Solo",
+				false)
+		);
+		curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
 
-	//	params.add(std::make_unique<AudioParameterFloat>
-	//		(paramID << "Coarse",
-	//			curOut << " Coarse",
-	//			-36.0f, 36.0f, 0.0f)
-	//	);
-	//	curOut = outputs[i];
-	//	paramID.clear();
-	//	paramID << "p" << curOut;
+		params.add(std::make_unique<AudioParameterBool>
+			(paramID << "Learn",
+				curOut << " Learn",
+				false)
+		);
+		curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
 
-	//	params.add(std::make_unique<AudioParameterFloat>
-	//		(paramID << "Fine",
-	//			curOut << " Fine",
-	//			-100.0f, 100.0f, 0.0f)
-	//	);
-	//	curOut = outputs[i];
-	//	paramID.clear();
-	//	paramID << "p" << curOut;
-	//}
+		params.add(std::make_unique<AudioParameterFloat>
+			(paramID << "Coarse",
+				curOut << " Coarse",
+				-36.0f, 36.0f, 0.0f)
+		);
+		curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
+
+		params.add(std::make_unique<AudioParameterFloat>
+			(paramID << "Fine",
+				curOut << " Fine",
+				-100.0f, 100.0f, 0.0f)
+		);
+		curOut = outputs[i];
+		paramID.clear();
+		paramID << "p" << curOut;
+	}
 
 	return params;
 }
@@ -110,8 +118,10 @@ DrumProcessor::DrumProcessor()
 	)
 	, parameters(*this, nullptr, Identifier("DrumSamplerVTS"), createParameterLayout())
 {
+	auto outputs = chNames.outputs;
+
 	// Generate instrument channels and attach parameters
-	for (auto channel = 0; channel < maxMidiChannel; channel++)
+	for (auto channel = 0; channel < MAX_INSTRUMENTS; channel++)
 	{
 		if (outputs[channel] != "Empty")
 		{
@@ -119,7 +129,7 @@ DrumProcessor::DrumProcessor()
 
 			synth.add(new DrumSynth(outputs[channel]));
 
-			//attachChannelParams(channel);
+			attachChannelParams(channel);
 
 			isChannelMuteEnabled[channel] = false;
 			isSoloEnabled[channel] = false;
@@ -140,6 +150,7 @@ void DrumProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
 	ignoreUnused(samplesPerBlock);
 	auto lastSampleRate = sampleRate;
+	auto outputs = chNames.outputs;
 	String message;
 
 	/*for (auto channel = 0; channel < maxMidiChannel; channel++) {
@@ -154,7 +165,7 @@ void DrumProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	message << " sampleRate = " << sampleRate;
 	Logger::getCurrentLogger()->writeToLog(message);
 
-	for (auto midiChannel = 0; midiChannel < maxMidiChannel; ++midiChannel)
+	for (auto midiChannel = 0; midiChannel < MAX_INSTRUMENTS; ++midiChannel)
 	{
 		if (outputs[midiChannel] != "Empty")
 			synth[midiChannel]->setCurrentPlaybackSampleRate(lastSampleRate);
@@ -204,14 +215,13 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiMess
 	// Copy value from parameters (for master channel)
 	auto curMasterGain = *masterLevel * 1;
 	auto curMasterPan = *masterPan * 1;
-	//auto curMasterMute = *masterMute * 1;
-	//auto curMasterMute = *masterMute > 0.5f ? true : false;
+	//auto isMasterMuteEnabled = *masterMute * 1;
+	isMasterMuteEnabled = *masterMute > 0.5f ? true : false;
 
 	//for (auto busNr = 0; busNr < busCount; ++busNr)
 	//{
 
 	//}
-
 
 	// Channels management
 	//for (auto busNr = 0; busNr < busCount; ++busNr)
@@ -250,7 +260,7 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiMess
 	float* outR = buffer.getNumChannels() > 1 ? buffer.getWritePointer(1) : nullptr;
 	auto numSamples = buffer.getNumSamples();
 	// Mute
-	//if (curMasterMute) { curMasterGain = 0; }
+	//if (isMasterMuteEnabled) { curMasterGain = 0; }
 	// Level and Pan
 	if (curMasterGain == previousMasterGain)
 	{
@@ -623,59 +633,60 @@ void DrumProcessor::attachMasterParams()
  */
 void DrumProcessor::attachChannelParams(int midiChannel)
 {
+	String paramID = "p";
 	paramID.clear();
 	paramID = "p";
 
 	// Parametri Canali
-	auto channelName = outputs[midiChannel];
+	auto channelName = chNames.outputs[midiChannel];
 	auto numVoices = synth[midiChannel]->getNumVoices();
 
-	//		if (numVoices != 0) {
-	//			for (auto i = 0; i < numVoices; i++)
-	//			{
-	//				auto currentVoice = static_cast<DrumVoice*>(synth[midiChannel]->getVoice(i));
-	//				auto sampleRate = currentVoice->getSampleRate();
-	//				paramID << "p";
-	//				
-	//				level[midiChannel] = parameters.getRawParameterValue    (paramID << channelName << "Level");
-	//				paramID.clear();
-	//				paramID << "p";
-	//	
-	//				isChannelMuteEnabled[midiChannel] = 
-	//					parameters.getRawParameterValue						(paramID << channelName << "Mute");
-	//				paramID.clear();
-	//				
-	//				isSoloEnabled[midiChannel] = 
-	//					parameters.getRawParameterValue						(paramID << channelName << "Solo");
-	//				paramID.clear();
-	//				
-	//				paramID << "p";
-	//				currentVoice->pan = parameters.getRawParameterValue		(paramID << channelName << "Pan");
-	//				paramID.clear();
-	//				
-	//				paramID << "p";
-	//				currentVoice->coarse = parameters.getRawParameterValue	(paramID << channelName << "Coarse"));
-	//				paramID.clear();
-	//				
-	//				paramID << "p";
-	//				currentVoice->fine = parameters.getRawParameterValue	(paramID << channelName << "Fine");
-	//				paramID.clear();
-	//				
-	//				paramID << "e";
-	////				auto env = currentVoice->env;
-	//				auto curAttack = parameters.getRawParameterValue		(paramID << channelName << "Attack");
-	////				env->setAttackRate(*curAttack * sampleRate);
-	//				paramID.clear();
-	//				
-	//				paramID << "e";
-	//				auto curHold = parameters.getRawParameterValue			(paramID << channelName << "Hold");
-	////				env->setDecayRate(*curHold * sampleRate);
-	//				paramID.clear();
-	//				
-	//				paramID << "e";
-	//				auto curRelease = parameters.getRawParameterValue		(paramID << channelName << "Release");
-	////				env->setReleaseRate(*curRelease * sampleRate);
-	//				paramID.clear();
-	//			}
-	//		}
+	if (numVoices != 0) {
+		for (auto i = 0; i < numVoices; i++)
+		{
+			auto currentVoice = static_cast<DrumVoice*>(synth[midiChannel]->getVoice(i));
+			auto sampleRate = currentVoice->getSampleRate();
+			paramID << "p";
+
+			level[midiChannel] = parameters.getRawParameterValue(paramID << channelName << "Level");
+			paramID.clear();
+			paramID << "p";
+
+			isChannelMuteEnabled[midiChannel] =
+				parameters.getRawParameterValue(paramID << channelName << "Mute");
+			paramID.clear();
+
+			isSoloEnabled[midiChannel] =
+				parameters.getRawParameterValue(paramID << channelName << "Solo");
+			paramID.clear();
+
+			paramID << "p";
+			currentVoice->pan = parameters.getRawParameterValue(paramID << channelName << "Pan");
+			paramID.clear();
+
+			paramID << "p";
+			currentVoice->coarse = parameters.getRawParameterValue(paramID << channelName << "Coarse");
+			paramID.clear();
+
+			paramID << "p";
+			currentVoice->fine = parameters.getRawParameterValue(paramID << channelName << "Fine");
+			paramID.clear();
+
+			//paramID << "e";
+			////				auto env = currentVoice->env;
+			//auto curAttack = parameters.getRawParameterValue(paramID << channelName << "Attack");
+			////				env->setAttackRate(*curAttack * sampleRate);
+			//paramID.clear();
+
+			//paramID << "e";
+			//auto curHold = parameters.getRawParameterValue(paramID << channelName << "Hold");
+			////				env->setDecayRate(*curHold * sampleRate);
+			//paramID.clear();
+
+			//paramID << "e";
+			//auto curRelease = parameters.getRawParameterValue(paramID << channelName << "Release");
+			////				env->setReleaseRate(*curRelease * sampleRate);
+			//paramID.clear();
+		}
+	}
 }
