@@ -65,8 +65,6 @@ public:
 	}
 
 	// CUSTOM METHODS
-	//void createParameters(AudioProcessorValueTreeState& parameters, int i);
-
 	void attachMasterParams();
 	void attachChannelParams(int i);
 
@@ -119,7 +117,6 @@ public:
 private:
 	juce::AudioProcessorValueTreeState parameters;
 	//UndoManager undoManager;
-	//String channelName;
 	int soloChannel;
 	bool isConstructorInitialised;
 
