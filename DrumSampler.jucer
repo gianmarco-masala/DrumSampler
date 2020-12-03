@@ -19,6 +19,9 @@
               file="Source/gui/PluginEditor.cpp"/>
         <FILE id="T13QzZ" name="PluginEditor.h" compile="0" resource="0" file="Source/gui/PluginEditor.h"/>
       </GROUP>
+      <GROUP id="{33EF1414-8427-CDA7-5568-ECCE9CA29328}" name="utils">
+        <FILE id="zLuIf2" name="mixer_info.xml" compile="0" resource="1" file="Source/utils/mixer_info.xml"/>
+      </GROUP>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>

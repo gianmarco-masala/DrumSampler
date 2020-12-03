@@ -76,7 +76,7 @@ public:
         if (index >= 0)
             isChannelMuteEnabled[index] = shouldBeEnabled;
         else
-            isMasterMuteEnabled = shouldBeEnabled;
+            parameters.getParameter("pMasterMute")->setValue(shouldBeEnabled);
     }
 
     void setSoloEnabled(const bool shouldBeEnabled, int index)
@@ -137,10 +137,7 @@ private:
     // Mute and solo booleans
     bool isChannelMuteEnabled[MAX_INSTRUMENTS];
     bool isSoloEnabled[MAX_INSTRUMENTS];
-    bool isMasterMuteEnabled = false;
-
-    // Need this to prevent creating master's parameters twice
-    bool isMasterSet = false;
+    bool isLearnEnabled[MAX_INSTRUMENTS];
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumProcessor)
 };

@@ -15,7 +15,8 @@ public:
     };
 
     //==============================================================================
-    DrumSynth(String name)
+    DrumSynth(String name, AudioProcessorValueTreeState& vts)
+        : parameters(vts)
     {
         chName = name;
         //note = nota predefinita;
@@ -37,7 +38,10 @@ public:
         {
             if (isMidiLearning)
             {
+                String paramID = "p";
                 midiLearn(m);
+                isMidiLearning = false;
+                parameters.getParameter(paramID << chName << "Learn")->setValueNotifyingHost(false);
             }
             else
             {
@@ -110,7 +114,6 @@ public:
             auto* const sound = static_cast<DrumSound* const> (soundSource);
             sound->setMidiNote(note);
         }
-        isMidiLearning = false;
     }
 
     void setMutingEnabled(const bool shouldBeEnabled) { mutingEnabled = shouldBeEnabled; }
@@ -173,6 +176,7 @@ private:
     bool mutingEnabled = false;
     String chName;
     int index, note;
+    AudioProcessorValueTreeState& parameters;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSynth)
 };

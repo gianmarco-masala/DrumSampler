@@ -185,9 +185,8 @@ private:
         soloButton5,
         soloButton6,
         soloButton7,
-        soloButton8;
+        soloButton8,
 
-    TextButton
         midiLearnButton1,
         midiLearnButton2,
         midiLearnButton3,

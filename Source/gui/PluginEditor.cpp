@@ -319,155 +319,37 @@ void  DrumEditor::timerCallback()
 {
     repaint();
 
-    if (!processor.synth[0]->isMidiLearning)
-    {
-        midiLearnButton1.setButtonText(TRANS("Learn"));
-        midiLearnButton1.setToggleState(false, dontSendNotification);
-    }
-    if (!processor.synth[1]->isMidiLearning)
-    {
-        midiLearnButton2.setButtonText(TRANS("Learn"));
-        midiLearnButton2.setToggleState(false, dontSendNotification);
-    }
+    //if (processor.synth[0]->isMidiLearning)
+    //{
+    //    midiLearnButton1.setButtonText(TRANS("Learning..."));
+    //    //midiLearnButton1.setToggleState(true, dontSendNotification);
+    //}
+    //else {
+    //    midiLearnButton1.setButtonText(TRANS("Learn"));
+    //    //midiLearnButton1.setToggleState(false, dontSendNotification);
+    //}
     // ...
 
 }
 
 void  DrumEditor::sliderValueChanged(Slider* slider)
 {
-    //float newValue = (float)slider->getValue();
-    //
-    //if (slider == kickLevelSlider)
-    //{
-    //	pKickLevelParam->setValueNotifyingHost(newValue);
-    //}
+
 }
 
 void  DrumEditor::sliderDragStarted(Slider* slider)
 {
-    //if (slider == kickLevelSlider)
-    //{
-    //	pKickLevelParam->beginChangeGesture();
-    //}
+
 }
 
 
 void  DrumEditor::sliderDragEnded(Slider* slider)
 {
-    //if (slider == kickLevelSlider)
-    //{
-    //	pKickLevelParam->endChangeGesture();
-    //}
+
 }
 
 void  DrumEditor::buttonClicked(Button* button)
-{
-    int i = 0;
-    // MUTE ==================================================================
-    if (button == &muteButton1)
-        processor.setMuteEnabled(muteButton1.getToggleState(), i);
-    i++;
-    if (button == &muteButton2)
-        processor.setMuteEnabled(muteButton2.getToggleState(), i);
-    i++;
-    if (button == &muteButton3)
-        processor.setMuteEnabled(muteButton3.getToggleState(), i);
-    i++;
-    if (button == &muteButton4)
-        processor.setMuteEnabled(muteButton4.getToggleState(), i);
-    i++;
-    if (button == &muteButton5)
-        processor.setMuteEnabled(muteButton5.getToggleState(), i);
-    i++;
-    if (button == &muteButton6)
-        processor.setMuteEnabled(muteButton6.getToggleState(), i);
-    i++;
-    if (button == &muteButton7)
-        processor.setMuteEnabled(muteButton7.getToggleState(), i);
-    i++;
-    if (button == &muteButton8)
-        processor.setMuteEnabled(muteButton8.getToggleState(), i);
-
-    if (button == &masterMuteButton)
-        processor.setMuteEnabled(masterMuteButton.getToggleState(), -1);
-
-    i = 0;
-    // SOLO ==================================================================
-    if (button == &soloButton1)
-        processor.setSoloEnabled(soloButton1.getToggleState(), i);
-    i++;
-    if (button == &soloButton2)
-        processor.setSoloEnabled(soloButton2.getToggleState(), i);
-    //i++;
-    //if (button == &muteButton3)
-    //	processor.setMuteEnabled(muteButton3.getToggleState(), i);
-    //i++;
-    //if (button == &muteButton4)
-    //	processor.setMuteEnabled(muteButton4.getToggleState(), i);
-    //i++;
-    //if (button == &muteButton5)
-    //	processor.setMuteEnabled(muteButton5.getToggleState(), i);
-    //i++;
-    //if (button == &muteButton6)
-    //	processor.setMuteEnabled(muteButton6.getToggleState(), i);
-    //i++;
-    //if (button == &muteButton7)
-    //	processor.setMuteEnabled(muteButton7.getToggleState(), i);
-    //i++;
-    //if (button == &muteButton8)
-    //	processor.setMuteEnabled(muteButton8.getToggleState(), i);
-
-
-    // MIDI LEARN =============================================================
-    else if (button == &midiLearnButton1)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 0);
-    }
-    else if (button == &midiLearnButton2)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 1);
-    }
-    else if (button == &midiLearnButton3)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 2);
-    }
-    else if (button == &midiLearnButton4)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 3);
-    }
-    else if (button == &midiLearnButton5)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 4);
-    }
-    else if (button == &midiLearnButton6)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 5);
-    }
-    else if (button == &midiLearnButton7)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 6);
-    }
-    else if (button == &midiLearnButton8)
-    {
-        button->setToggleState(true, dontSendNotification);
-        button->setButtonText(TRANS("Learning..."));
-        processor.setLearnFromMidi(true, 7);
-    }
-}
+{ }
 
 
 void  DrumEditor::initChannel(AudioProcessorValueTreeState& vts,
@@ -607,10 +489,10 @@ void  DrumEditor::drawChannel(int startX,
         buttonHeight);								// height
 
     midiLearnButton->setBounds
-    (midiLearnButton->getBoundsInParent().getX(),		// x
-        blankSpace + muteButton->getY() + muteButton->getHeight(),											// y
-        midiLearnButton->getParentWidth(),									// width
-        buttonHeight);								// height
+    (midiLearnButton->getBoundsInParent().getX(),
+        blankSpace + muteButton->getY() + muteButton->getHeight(),
+        midiLearnButton->getParentWidth(),
+        buttonHeight);
 
     levelLabel->setBounds
     (levelLabel->getBoundsInParent().getX(),			// x
