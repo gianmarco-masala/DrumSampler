@@ -4,177 +4,178 @@
 #include "DrumSound.h"
 
 
-class DrumSynth : public Synthesiser
+class DrumSynth    : public Synthesiser
 {
 public:
-    enum
-    {
-        maxSoundsPerRange = 1,
-        maxVoices = 10,
-        numVelocityRange = 8
-    };
+	enum
+	{
+		maxSoundsPerRange = 1,
+		maxVoices = 10,
+		numVelocityRange = 8
+	};
 
-    //==============================================================================
+	//==============================================================================
     DrumSynth(String name)
     {
-        chName = name;
-        //note = nota predefinita;
+		chName = name;
+		//note = nota predefinita;
 
-        for (int i = maxVoices; --i >= 0;)
-            addVoice(new DrumVoice());
+		for (int i = maxVoices; --i >= 0;)
+			addVoice(new DrumVoice());
 
-        addSounds();
+		addSounds();
     }
 
     ~DrumSynth()
-    { }
-
-    void handleMidiEvent(const MidiMessage& m) override
     {
-        const int channel = m.getChannel();
-
-        if (m.isNoteOn())
-        {
-            if (isMidiLearning)
-            {
-                midiLearn(m);
-            }
-            else
-            {
-                noteOn(channel, m.getNoteNumber(), m.getFloatVelocity());
-                voicesToLog(m.getNoteNumber(), m.getFloatVelocity());
-            }
-        }
-        else if (m.isNoteOff())
-        {
-            //	noteOff(channel, m.getNoteNumber(), m.getFloatVelocity(), true);
-        }
-        else if (m.isAllNotesOff() || m.isAllSoundOff())
-        {
-            allNotesOff(channel, true);
-        }
-        else if (m.isPitchWheel())
-        {
-            //const int wheelPos = m.getPitchWheelValue();
-            //lastPitchWheelValues[channel - 1] = wheelPos;
-            //handlePitchWheel(channel, wheelPos);
-        }
-        else if (m.isAftertouch())
-        {
-            //			handleAftertouch(channel, m.getNoteNumber(), m.getAfterTouchValue());
-        }
-        else if (m.isChannelPressure())
-        {
-            //			handleChannelPressure(channel, m.getChannelPressureValue());
-        }
-        else if (m.isController())
-        {
-            //			handleController(channel, m.getControllerNumber(), m.getControllerValue());
-        }
-        else if (m.isProgramChange())
-        {
-            //			handleProgramChange(channel, m.getProgramChangeNumber());
-        }
     }
 
-    void noteOn(const int midiChannel,
-                 const int midiNoteNumber,
-                 const float velocity)	override
-    {
-        const ScopedLock sl(lock);
+	void handleMidiEvent(const MidiMessage& m) override 
+	{
+		const int channel = m.getChannel();
 
-        for (auto* soundSource : sounds)
-        {
-            auto* const sound = static_cast<DrumSound* const> (soundSource);
+		if (m.isNoteOn())
+		{
+			if (isMidiLearning)
+			{
+				midiLearn(m);
+			}
+			else
+			{
+				noteOn(channel, m.getNoteNumber(), m.getFloatVelocity());
+				voicesToLog(m.getNoteNumber(), m.getFloatVelocity());
+			}
+		}
+		else if (m.isNoteOff())
+		{
+		//	noteOff(channel, m.getNoteNumber(), m.getFloatVelocity(), true);
+		}
+		else if (m.isAllNotesOff() || m.isAllSoundOff())
+		{
+			allNotesOff(channel, true);
+		}
+		else if (m.isPitchWheel())
+		{
+			//const int wheelPos = m.getPitchWheelValue();
+			//lastPitchWheelValues[channel - 1] = wheelPos;
+			//handlePitchWheel(channel, wheelPos);
+		}
+		else if (m.isAftertouch())
+		{
+//			handleAftertouch(channel, m.getNoteNumber(), m.getAfterTouchValue());
+		}
+		else if (m.isChannelPressure())
+		{
+//			handleChannelPressure(channel, m.getChannelPressureValue());
+		}
+		else if (m.isController())
+		{
+//			handleController(channel, m.getControllerNumber(), m.getControllerValue());
+		}
+		else if (m.isProgramChange())
+		{
+//			handleProgramChange(channel, m.getProgramChangeNumber());
+		}
+	}
 
-            if (sound->appliesTo(midiNoteNumber, velocity) && sound->appliesToChannel(midiChannel))
-            {
-                // If hitting a note that's still ringing, stop it first (it could be
-                // still playing because of the sustain or sostenuto pedal).
-                for (auto* voice : voices)
-                    if (voice->getCurrentlyPlayingNote() == midiNoteNumber && voice->isPlayingChannel(midiChannel))
-                        stopVoice(voice, 1.0f, true);
+	void noteOn	(const int midiChannel,
+				 const int midiNoteNumber,
+				 const float velocity)	override
+	{
+		const ScopedLock sl(lock);
 
-                startVoice(findFreeVoice(sound, midiChannel, midiNoteNumber, shouldStealNotes),
-                           sound, midiChannel, midiNoteNumber, velocity);
-            }
-        }
-    }
+		for (auto* soundSource : sounds)
+		{
+			auto* const sound = static_cast<DrumSound* const> (soundSource);
 
-    void midiLearn(const MidiMessage& msg)
-    {
-        note = msg.getNoteNumber();
-        DBG(note);
-        for (auto* soundSource : sounds)
-        {
-            auto* const sound = static_cast<DrumSound* const> (soundSource);
-            sound->setMidiNote(note);
-        }
-        isMidiLearning = false;
-    }
+			if (sound->appliesTo(midiNoteNumber, velocity) && sound->appliesToChannel(midiChannel))
+			{
+				// If hitting a note that's still ringing, stop it first (it could be
+				// still playing because of the sustain or sostenuto pedal).
+				for (auto* voice : voices)
+					if (voice->getCurrentlyPlayingNote() == midiNoteNumber && voice->isPlayingChannel(midiChannel))
+						stopVoice(voice, 1.0f, true);
 
-    void setMutingEnabled(const bool shouldBeEnabled) { mutingEnabled = shouldBeEnabled; }
+				startVoice(findFreeVoice(sound, midiChannel, midiNoteNumber, shouldStealNotes),
+						   sound, midiChannel, midiNoteNumber, velocity);
+			}
+		}
+	}
 
-    bool isMidiLearning = false;
+	void midiLearn(const MidiMessage& msg)
+	{
+		note = msg.getNoteNumber();
+		DBG(note);
+		for (auto* soundSource : sounds)
+		{
+			auto* const sound = static_cast<DrumSound* const> (soundSource);
+			sound->setMidiNote(note);
+		}
+		isMidiLearning = false;
+	}
+
+	void setMutingEnabled(const bool shouldBeEnabled) { mutingEnabled = shouldBeEnabled; }
+
+	bool isMidiLearning = false;
 
 private:
-    void addSounds()
-    {
-        Range<float> velocityRange;
-        float velocityTot = 1.0f;
-        float start = 1.0f / 128.0f;
-        float const lenght = velocityTot / numVelocityRange;
+	void addSounds()
+	{
+		Range<float> velocityRange;
+		float velocityTot = 1.0f;
+		float start = 1.0f / 128.0f;
+		float const lenght = velocityTot / numVelocityRange;
 
-        for (float range = 1; range <= numVelocityRange; range++)
-        {
-            velocityRange.setStart(start);
-            velocityRange.setEnd(start + lenght);
+		for (float range = 1; range <= numVelocityRange; range++)
+		{
+			velocityRange.setStart(start);
+			velocityRange.setEnd(start + lenght);
 
-            for (index = 1; index <= maxSoundsPerRange; index++) {
-                addSound(sound = new DrumSound());
-                sound->setName(chName);
-                sound->setVelocityRange(velocityRange);
-                sound->setIndex(index);
-                sound->setMidiNote(note);
-                //	sound->workingDirectory = file->getCurrentWorkingDirectory();
-            }
-            start += lenght;
-            if (start > velocityTot)
-                break;
-        }
-    }
+			for (index = 1; index <= maxSoundsPerRange; index++) {
+				addSound(sound = new DrumSound());
+				sound->setName(chName);
+				sound->setVelocityRange(velocityRange);
+				sound->setIndex(index);
+				sound->setMidiNote(note);
+			//	sound->workingDirectory = file->getCurrentWorkingDirectory();
+			}
+			start += lenght;
+			if (start > velocityTot)
+				break;
+		}
+	}
 
-    void voicesToLog(int midiNote, float velocity)
-    {
-        //		if(velocity > 0.0f)
-        //			Logger::getCurrentLogger()->writeToLog("                     <<<<<< tasto premuto");
+	void voicesToLog(int midiNote, float velocity)
+	{
+//		if(velocity > 0.0f)
+//			Logger::getCurrentLogger()->writeToLog("                     <<<<<< tasto premuto");
 
-        int voiceIndex;
-        auto numVoices = getNumVoices();
-        String msg;
+		int voiceIndex;
+		auto numVoices = getNumVoices();
+		String msg;
 
-        for (int i = numVoices - 1; i >= 0; i--)
-        {
-            voice = voices[i];
-            auto voiceActive = voice->isVoiceActive();
-            if (voiceActive) {
-                voiceIndex = i;
-                msg << "voice: " << voiceIndex << ", startNote: " << midiNote << "\n";
-                Logger::getCurrentLogger()->writeToLog(msg);
-                break;
-            }
-        }
-    }
+		for (int i = numVoices - 1; i >= 0; i--)
+		{
+			voice = voices[i];
+			auto voiceActive = voice->isVoiceActive();
+			if (voiceActive) {
+				voiceIndex = i;
+				msg << "voice: " << voiceIndex << ", startNote: " << midiNote << "\n";
+				Logger::getCurrentLogger()->writeToLog(msg);
+				break;
+			}
+		}
+	}
 
-    DrumSound* sound;
-    SynthesiserVoice* voice;
-    std::unique_ptr<File> file;
-    bool shouldStealNotes = true;
-    bool mutingEnabled = false;
-    String chName;
-    int index, note;
+	DrumSound* sound;
+	SynthesiserVoice* voice;
+	std::unique_ptr<File> file;
+	bool shouldStealNotes = true;
+	bool mutingEnabled = false;
+	String chName;
+	int index, note;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSynth)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DrumSynth)
 };
 
 //kit
