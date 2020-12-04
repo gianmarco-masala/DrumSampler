@@ -15,11 +15,16 @@ public:
     };
 
     //==============================================================================
-    DrumSynth(String name, AudioProcessorValueTreeState& vts)
+    DrumSynth(
+        AudioProcessorValueTreeState& vts,
+        const String name,
+        const int index,
+        const int defaultNote
+    )
         : parameters(vts)
     {
         chName = name;
-        //note = nota predefinita;
+        note = defaultNote;
 
         for (int i = maxVoices; --i >= 0;)
             addVoice(new DrumVoice());
@@ -38,8 +43,9 @@ public:
         {
             if (*learnEnabled)
             {
+                String paramId = "p";
                 midiLearn(m);
-                setParamBool("Learn", false);
+                parameters.getParameter(paramId << chName << "Learn")->setValueNotifyingHost(false);
             }
             else
             {
@@ -49,7 +55,7 @@ public:
         }
         else if (m.isNoteOff())
         {
-            //	noteOff(channel, m.getNoteNumber(), m.getFloatVelocity(), true);
+            //noteOff(channel, m.getNoteNumber(), m.getFloatVelocity(), true);
         }
         else if (m.isAllNotesOff() || m.isAllSoundOff())
         {
@@ -63,19 +69,19 @@ public:
         }
         else if (m.isAftertouch())
         {
-            //			handleAftertouch(channel, m.getNoteNumber(), m.getAfterTouchValue());
+            //handleAftertouch(channel, m.getNoteNumber(), m.getAfterTouchValue());
         }
         else if (m.isChannelPressure())
         {
-            //			handleChannelPressure(channel, m.getChannelPressureValue());
+            //handleChannelPressure(channel, m.getChannelPressureValue());
         }
         else if (m.isController())
         {
-            //			handleController(channel, m.getControllerNumber(), m.getControllerValue());
+            //handleController(channel, m.getControllerNumber(), m.getControllerValue());
         }
         else if (m.isProgramChange())
         {
-            //			handleProgramChange(channel, m.getProgramChangeNumber());
+            //handleProgramChange(channel, m.getProgramChangeNumber());
         }
     }
 
@@ -112,15 +118,6 @@ public:
             auto* const sound = static_cast<DrumSound* const> (soundSource);
             sound->setMidiNote(note);
         }
-    }
-
-    // Set a boolean value in parameters. 
-    // First argument should come with first uppercase letter
-    // e.g. setParamBool("Learn", true)
-    void setParamBool(const String paramType, const bool shouldBeEnabled)
-    {
-        String paramId = "p";
-        parameters.getParameter(paramId << chName << paramType)->setValueNotifyingHost(shouldBeEnabled);
     }
 
     void attachMidiLearn(std::atomic<float>* ptr) { learnEnabled = ptr; }
@@ -174,6 +171,7 @@ private:
         }
     }
 
+    AudioProcessorValueTreeState& parameters;
     DrumSound* sound;
     SynthesiserVoice* voice;
     std::unique_ptr<File> file;
@@ -182,7 +180,6 @@ private:
     std::atomic<float>* learnEnabled;
     String chName;
     int index, note;
-    AudioProcessorValueTreeState& parameters;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSynth)
 };
@@ -196,9 +193,3 @@ private:
 //				microphone mapping (rientri)
 
 // informarsi su lettura file interleaved (file unico dal quale fare dispatch delle voci) come metodo alternativo ai tanti file di rientri.
-
-// (FATTO) impostare schema
-
-// testare i metodi man mano
-
-// ottimizzazione uso cpu

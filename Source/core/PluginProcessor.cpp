@@ -125,12 +125,15 @@ DrumProcessor::DrumProcessor()
     // RETRIEVE DRUMSET INFO
     outputs = drumsetInfo.getActiveOutputs();
     maxOutputs = outputs.size();
+    auto note = 72; // Start note
 
     // Generate a synth for each active output and attach parameters
     for (auto channel = 0; channel < maxOutputs; channel++)
     {
         Logger::getCurrentLogger()->writeToLog(outputs[channel]);
-        synth.add(new DrumSynth(outputs[channel], parameters));
+        synth.add(
+            new DrumSynth(parameters, outputs[channel], channel, note++)
+        );
         attachChannelParams(channel);
         isChannelMuteEnabled[channel] = false;
         isSoloEnabled[channel] = false;

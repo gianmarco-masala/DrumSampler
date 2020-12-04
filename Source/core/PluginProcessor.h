@@ -98,12 +98,12 @@ public:
 
 
     OwnedArray<DrumSynth> synth;
+    StringArray outputs;
 
 private:
     juce::AudioProcessorValueTreeState parameters;
     //UndoManager undoManager;
     DrumsetXmlHandler drumsetInfo;
-    StringArray outputs;
     int maxOutputs;
 
     // Pointers to parameters, used by processor
