@@ -340,7 +340,7 @@ void DrumProcessor::attachChannelParams(int midiChannel)
 
             // Learn
             paramID << "p";
-            synth[midiChannel]->isMidiLearning = parameters.getRawParameterValue(paramID << channelName << "Learn");
+            synth[midiChannel]->attachMidiLearn(parameters.getRawParameterValue(paramID << channelName << "Learn"));
             paramID.clear();
 
             // Pan

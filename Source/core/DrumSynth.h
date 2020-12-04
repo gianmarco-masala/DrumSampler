@@ -36,12 +36,10 @@ public:
 
         if (m.isNoteOn())
         {
-            if (isMidiLearning)
+            if (*learnEnabled)
             {
-                String paramID = "p";
                 midiLearn(m);
-                isMidiLearning = false;
-                parameters.getParameter(paramID << chName << "Learn")->setValueNotifyingHost(false);
+                setParamBool("Learn", false);
             }
             else
             {
@@ -116,9 +114,16 @@ public:
         }
     }
 
-    void setMutingEnabled(const bool shouldBeEnabled) { mutingEnabled = shouldBeEnabled; }
+    // Set a boolean value in parameters. 
+    // First argument should come with first uppercase letter
+    // e.g. setParamBool("Learn", true)
+    void setParamBool(const String paramType, const bool shouldBeEnabled)
+    {
+        String paramId = "p";
+        parameters.getParameter(paramId << chName << paramType)->setValueNotifyingHost(shouldBeEnabled);
+    }
 
-    bool isMidiLearning = false;
+    void attachMidiLearn(std::atomic<float>* ptr) { learnEnabled = ptr; }
 
 private:
     void addSounds()
@@ -174,6 +179,7 @@ private:
     std::unique_ptr<File> file;
     bool shouldStealNotes = true;
     bool mutingEnabled = false;
+    std::atomic<float>* learnEnabled;
     String chName;
     int index, note;
     AudioProcessorValueTreeState& parameters;

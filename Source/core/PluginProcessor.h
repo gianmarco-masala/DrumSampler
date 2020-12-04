@@ -96,7 +96,6 @@ public:
         return true;
     }
 
-    void setLearnFromMidi(bool isLearnSet, int channel) { synth[channel]->isMidiLearning = isLearnSet; }
 
     OwnedArray<DrumSynth> synth;
 
