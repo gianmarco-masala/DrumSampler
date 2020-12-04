@@ -11,7 +11,7 @@ public:
     {
         maxSoundsPerRange = 1,
         maxVoices = 10,
-        numVelocityRange = 8
+        numVelocityRange = 2
     };
 
     //==============================================================================

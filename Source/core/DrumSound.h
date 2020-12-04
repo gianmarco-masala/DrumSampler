@@ -80,17 +80,19 @@ private:
     {
         String msg;
         auto parentDir = workingDirectory.getCurrentWorkingDirectory();
-        auto dir = parentDir.getChildFile("../Samples");
+        auto dir = parentDir.getChildFile("../../../../../Resources/Samples");
 
-        // Formato nome file: NomePezzo_articolazione_indice_velocity.estensione		// NomePezzo: Kick, Snare, Hi-Hat ...
-                                                                                        // indice: 1, 2, 3 ...
-                                                                                        // velocity: il limite inferiore del range
-                                                                                        // estensione: wav
+        // Formato nome file: NomePezzo_articolazione_indice_velocity.estensione
+        // NomePezzo: Kick, Snare, Hi-Hat ...
+        // indice: 1, 2, 3 ...
+        // velocity: il limite inferiore del range
+        // estensione: wav
+
         path << dir.getFullPathName() << dir.getSeparatorChar()
             << chName << "_"
             << index << "_"
             << roundFloatToInt(velocity.getStart() * 127)
-            << ".wav";
+            << ".aif";
 
         msg << "\nLoading Sample: \n" << path << "\n";
         Logger::getCurrentLogger()->writeToLog(msg);
@@ -182,24 +184,22 @@ public:
     {
         if (auto* sound = dynamic_cast<const DrumSound*> (s))
         {
-            //			auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get());
+            //auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get());
 
-                        // Collego i puntatori ai rispettivi valori
-                        //auto initVoice = [this] (DrumVoice& voice)
-                        //{
+            // Collego i puntatori ai rispettivi valori
+            //auto initVoice = [this] (DrumVoice& voice)
+            //{
             semitones = *coarse;
             cents = *fine;
             //	env = playingSound->getEnvelope();
             //	env->reset();
-        //	env->gate(true);
-        //};
-        //semitones = *coarseTuning;
-        //cents = *fineTuning;
+            //	env->gate(true);
+            //};
 
-        // Apro l'inviluppo
-//			env = playingSound->getEnvelope();
-//			env->reset();
-        //	env->gate(true);
+            // Apro l'inviluppo
+            //env = playingSound->getEnvelope();
+            //env->reset();
+            //env->gate(true);
 
             //==============================================================
             attackSamples = roundToInt(attackTime * sound->reader->sampleRate);

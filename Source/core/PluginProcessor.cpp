@@ -8,7 +8,7 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 
 AudioProcessorEditor* DrumProcessor::createEditor()
 {
-    return new DrumEditor(*this, parameters);
+    return new GenericEditor(*this, parameters);
 }
 
 AudioProcessorValueTreeState::ParameterLayout createParameterLayout()

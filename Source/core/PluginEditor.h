@@ -11,6 +11,19 @@ class DrumProcessor;
 typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
+class GenericEditor : public AudioProcessorEditor
+{
+public:
+    GenericEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts);
+
+    void paint(Graphics&) override;
+    void resized() override;
+
+private:
+    DrumProcessor& processor;
+    AudioProcessorValueTreeState& valueTreeState;
+};
+
 class  DrumEditor :
     public AudioProcessorEditor,
     public Slider::Listener,
@@ -25,15 +38,17 @@ public:
     void resized() override;
 
 private:
+    // Must override this methods in order to inherit Listener properties.
+    // Actually they won't do nothing because editor's components changes are
+    // automatically notified to the processor by AudioProcessorValueTreeState
+    void sliderValueChanged(Slider* slider) override { };
+    void sliderDragStarted(Slider* slider) override { };
+    void sliderDragEnded(Slider* slider) override { };
+    void buttonClicked(Button* button) override { };
 
-    //	"Must-override" methods
-    void sliderValueChanged(Slider* slider) override;
-    void sliderDragStarted(Slider* slider) override;
-    void sliderDragEnded(Slider* slider) override;
-    void buttonClicked(Button* button) override;
     void timerCallback() override;
 
-    // Init functions
+    // Custom init functions
     void initLabel(Label& label)
     {
         addAndMakeVisible(label);

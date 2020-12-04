@@ -1,13 +1,35 @@
 #include "../core/PluginProcessor.h"
 #include "../core/PluginEditor.h"
 
+// GENERIC EDITOR
 //==============================================================================
+GenericEditor::GenericEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
+    : AudioProcessorEditor(parent)
+    , processor(parent)
+    , valueTreeState(vts)
+{
+    Logger::getCurrentLogger()->writeToLog(">>>>>>>>> GenericEditor constructor called.");
+
+    // Window size
+    setSize(400, 300);
+}
+
+//==============================================================================
+void  GenericEditor::paint(Graphics& g)
+{
+    g.fillAll(getLookAndFeel().findColour(ResizableWindow::backgroundColourId));
+}
+
+void  GenericEditor::resized()
+{ }
+
+// CUSTOM EDITOR
 DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor(parent)
     , processor(parent)
     , valueTreeState(vts)
 {
-    Logger::getCurrentLogger()->writeToLog(">>>>>>>>> Editor constructor called.");
+    Logger::getCurrentLogger()->writeToLog(">>>>>>>>> DrumEditor constructor called.");
 
     const MessageManagerLock mmLock;
     startTimer(100);
@@ -189,7 +211,6 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
     setSize(1000, 600);
 }
 
-//==============================================================================
 void  DrumEditor::paint(Graphics& g)
 {
     g.fillAll(getLookAndFeel().findColour(ResizableWindow::backgroundColourId));
@@ -331,26 +352,6 @@ void  DrumEditor::timerCallback()
     // ...
 
 }
-
-void  DrumEditor::sliderValueChanged(Slider* slider)
-{
-
-}
-
-void  DrumEditor::sliderDragStarted(Slider* slider)
-{
-
-}
-
-
-void  DrumEditor::sliderDragEnded(Slider* slider)
-{
-
-}
-
-void  DrumEditor::buttonClicked(Button* button)
-{ }
-
 
 void  DrumEditor::initChannel(AudioProcessorValueTreeState& vts,
     String& channelName,
