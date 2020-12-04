@@ -131,6 +131,10 @@ private:
                         true);
                 }
             }
+            else
+            {
+                jassertfalse; // File was not found!
+            }
         }
     }
 
