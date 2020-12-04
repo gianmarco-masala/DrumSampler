@@ -1,5 +1,5 @@
 #include "../core/PluginProcessor.h"
-#include "../gui/PluginEditor.h"
+#include "../core/PluginEditor.h"
 
 //==============================================================================
 DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
@@ -14,10 +14,10 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
 
     // CHANNELS
     auto index = 0;
-    ChannelNames chNames;
+    outputs = drumsetInfo.getActiveOutputs();
 
     // CANALE 1
-    auto name = chNames.outputs[index];
+    auto name = outputs[index];
     auto curGroup = &group1;
     auto curLevelLabel = &levelLabel1;
     auto curPanLabel = &panLabel1;
@@ -36,7 +36,7 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
         curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
     // CANALE 2
-    name = chNames.outputs[index];
+    name = outputs[index];
     curGroup = &group2;
     curLevelLabel = &levelLabel2;
     curPanLabel = &panLabel2;
@@ -55,7 +55,7 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
         curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
     // CANALE 3
-    name = chNames.outputs[index];
+    name = outputs[index];
     curGroup = &group3;
     curLevelLabel = &levelLabel3;
     curPanLabel = &panLabel3;
@@ -74,7 +74,7 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
         curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
     // CANALE 4
-    name = chNames.outputs[index];
+    name = outputs[index];
     curGroup = &group4;
     curLevelLabel = &levelLabel4;
     curPanLabel = &panLabel4;
@@ -93,7 +93,7 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
         curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
     // CANALE 5
-    name = chNames.outputs[index];
+    name = outputs[index];
     curGroup = &group5;
     curLevelLabel = &levelLabel5;
     curPanLabel = &panLabel5;
@@ -112,7 +112,7 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
         curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
     // CANALE 6
-    name = chNames.outputs[index];
+    name = outputs[index];
     curGroup = &group6;
     curLevelLabel = &levelLabel6;
     curPanLabel = &panLabel6;
@@ -131,7 +131,7 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
         curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
     // CANALE 7
-    name = chNames.outputs[index];
+    name = outputs[index];
     curGroup = &group7;
     curLevelLabel = &levelLabel7;
     curPanLabel = &panLabel7;
@@ -150,7 +150,7 @@ DrumEditor::DrumEditor(DrumProcessor& parent, AudioProcessorValueTreeState& vts)
         curSoloButton, curLearnButton, curLevelAttach, curPanAttach, curMuteAttach, curSoloAttach, curLearnAttach);
 
     // CANALE 8
-    name = chNames.outputs[index];
+    name = outputs[index];
     curGroup = &group8;
     curLevelLabel = &levelLabel8;
     curPanLabel = &panLabel8;

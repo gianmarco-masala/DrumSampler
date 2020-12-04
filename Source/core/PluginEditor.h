@@ -2,6 +2,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "../core/PluginProcessor.h"
+#include "../utils/DrumsetXmlHandler.h"
 
 //==============================================================================
 
@@ -25,15 +26,11 @@ public:
 
 private:
 
-    //	Slider::Listener methods
+    //	"Must-override" methods
     void sliderValueChanged(Slider* slider) override;
     void sliderDragStarted(Slider* slider) override;
     void sliderDragEnded(Slider* slider) override;
-
-    //  Button::Listener method
     void buttonClicked(Button* button) override;
-
-    // Timer method
     void timerCallback() override;
 
     // Init functions
@@ -90,6 +87,8 @@ private:
 
     DrumProcessor& processor;
     AudioProcessorValueTreeState& valueTreeState;
+    DrumsetXmlHandler drumsetInfo;
+    StringArray outputs;
 
     int numChannels, startingPoint = 5;
 

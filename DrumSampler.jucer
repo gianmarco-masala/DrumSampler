@@ -9,17 +9,17 @@
       <GROUP id="{AA32E8E8-7A05-555F-63ED-8A5CFE9D5E5E}" name="core">
         <FILE id="PU48Gh" name="DrumSound.h" compile="1" resource="0" file="Source/core/DrumSound.h"/>
         <FILE id="nok5mx" name="DrumSynth.h" compile="1" resource="0" file="Source/core/DrumSynth.h"/>
+        <FILE id="Xmid37" name="PluginEditor.cpp" compile="1" resource="0"
+              file="Source/core/PluginEditor.cpp"/>
+        <FILE id="eBjX5N" name="PluginEditor.h" compile="0" resource="0" file="Source/core/PluginEditor.h"/>
         <FILE id="azlRUo" name="PluginProcessor.cpp" compile="1" resource="0"
               file="Source/core/PluginProcessor.cpp"/>
         <FILE id="y4TAgr" name="PluginProcessor.h" compile="0" resource="0"
               file="Source/core/PluginProcessor.h"/>
       </GROUP>
-      <GROUP id="{40AFC898-864B-C3C3-5BA4-6B85C32C84E0}" name="gui">
-        <FILE id="jJP7wC" name="PluginEditor.cpp" compile="1" resource="0"
-              file="Source/gui/PluginEditor.cpp"/>
-        <FILE id="T13QzZ" name="PluginEditor.h" compile="0" resource="0" file="Source/gui/PluginEditor.h"/>
-      </GROUP>
       <GROUP id="{33EF1414-8427-CDA7-5568-ECCE9CA29328}" name="utils">
+        <FILE id="Hg6IB0" name="DrumsetXmlHandler.h" compile="0" resource="0"
+              file="Source/utils/DrumsetXmlHandler.h"/>
         <FILE id="zLuIf2" name="mixer_info.xml" compile="0" resource="1" file="Source/utils/mixer_info.xml"/>
       </GROUP>
     </GROUP>

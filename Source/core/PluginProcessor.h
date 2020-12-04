@@ -3,24 +3,10 @@
 #define MAX_INSTRUMENTS 8
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "../gui/PluginEditor.h"
+#include "../core/PluginEditor.h"
 #include "DrumSynth.h"
+#include "../utils/DrumsetXmlHandler.h"
 //#include "../envelope/ADSR.h"
-
-struct ChannelNames
-{
-    const String outputs[MAX_INSTRUMENTS] =
-    {
-        "Kick",
-        "Snare",
-        "Tom1",
-        "Tom2",
-        "Tom3",
-        "HiHat",
-        "Overhead",
-        "Empty",
-    };
-};
 
 class DrumProcessor : public AudioProcessor
 {
@@ -99,7 +85,7 @@ public:
     {
         for (auto channel = 0; channel < MAX_INSTRUMENTS; channel++)
         {
-            if (chNames.outputs[channel] == "Empty")
+            if (outputs[channel] == "Empty")
                 break;
             else
             {
@@ -113,13 +99,13 @@ public:
     void setLearnFromMidi(bool isLearnSet, int channel) { synth[channel]->isMidiLearning = isLearnSet; }
 
     OwnedArray<DrumSynth> synth;
-    ChannelNames chNames;
 
 private:
     juce::AudioProcessorValueTreeState parameters;
     //UndoManager undoManager;
-    int soloChannel;
-    bool isConstructorInitialised;
+    DrumsetXmlHandler drumsetInfo;
+    StringArray outputs;
+    int maxOutputs;
 
     // Pointers to parameters, used by processor
     std::atomic<float>* level[MAX_INSTRUMENTS];
