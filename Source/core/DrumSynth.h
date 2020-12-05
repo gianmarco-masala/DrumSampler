@@ -141,7 +141,6 @@ private:
                 sound->setVelocityRange(velocityRange);
                 sound->setIndex(index);
                 sound->setMidiNote(note);
-                //	sound->workingDirectory = file->getCurrentWorkingDirectory();
             }
             start += lenght;
             if (start > velocityTot)
@@ -175,9 +174,9 @@ private:
     DrumSound* sound;
     SynthesiserVoice* voice;
     std::unique_ptr<File> file;
+    std::atomic<float>* learnEnabled;
     bool shouldStealNotes = true;
     bool mutingEnabled = false;
-    std::atomic<float>* learnEnabled;
     String chName;
     int index, note;
 

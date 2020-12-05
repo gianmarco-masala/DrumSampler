@@ -3,13 +3,10 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
-//#include "../envelope/ADSR.h"
 #include "DrumSynth.h"
 
-//==============================================================================
-
-
-class DrumSound : public SynthesiserSound
+class DrumSound
+    : public SynthesiserSound
     , private Thread
 {
 public:
@@ -114,7 +111,6 @@ private:
             File file(pathToOpen);
             reader.reset(formatManager.createReaderFor(file));
 
-
             if (reader.get() != nullptr)
             {
                 if (reader->sampleRate > 0 && reader->lengthInSamples > 0)
@@ -142,24 +138,16 @@ private:
 
     AudioFormatManager formatManager;
     std::unique_ptr<AudioFormatReader> reader;
+    std::unique_ptr<AudioBuffer<float>> data;
+    BigInteger midiNotes;
+    Range<float> velocity;
     String path, chName;
     int index;
-    std::unique_ptr<AudioBuffer<float>> data;
-
-    BigInteger midiNotes;
     int playingMidiNote = 0;
-    Range<float> velocity;
-
-    bool isPathSet = false;
-
-    //ADSR* env;
-
     int midiRootNote = 60;
     int maxSampleLengthSeconds = 30;
-
     int lenght = 0;
-    //attackSamples = 0, releaseSamples = 0;
-    //double attackTimeSecs = 0, releaseTimeSecs = 0;
+    bool isPathSet = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSound)
 };
@@ -171,16 +159,15 @@ class DrumVoice : public SynthesiserVoice
 {
 public:
     DrumVoice()
-    {
-        //	env = new ADSR();
-    }
+    { }
 
     ~DrumVoice()
     { }
 
+    // Check if passed sound is a correct DrumSound type.
+    // Return nullptr otherwise.
     bool canPlaySound(SynthesiserSound* sound) override
     {
-        // check se il tipo di suono è quello corretto
         return dynamic_cast<DrumSound*> (sound) != nullptr;
     }
 
@@ -188,24 +175,22 @@ public:
     {
         if (auto* sound = dynamic_cast<const DrumSound*> (s))
         {
-            //auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get());
+            prevGain = *level;
+            semitones = *coarse;
+            cents = *fine;
 
             // Collego i puntatori ai rispettivi valori
             //auto initVoice = [this] (DrumVoice& voice)
             //{
-            semitones = *coarse;
-            cents = *fine;
             //	env = playingSound->getEnvelope();
             //	env->reset();
             //	env->gate(true);
             //};
-
             // Apro l'inviluppo
             //env = playingSound->getEnvelope();
             //env->reset();
             //env->gate(true);
 
-            //==============================================================
             attackSamples = roundToInt(attackTime * sound->reader->sampleRate);
             releaseSamples = roundToInt(releaseTime * sound->reader->sampleRate);
             pitchRatio = std::pow(2.0, (semitones + cents * 0.01) / 12.0)
@@ -242,7 +227,7 @@ public:
 
     }
 
-    void stopNote(float velocity, bool allowTailOff) override
+    void stopNote(float /*velocity*/, bool allowTailOff) override
     {
         if (allowTailOff)
         {
@@ -267,6 +252,8 @@ public:
             float* outL = outputBuffer.getWritePointer(0, startSample);
             float* outR = outputBuffer.getNumChannels() > 1 ? outputBuffer.getWritePointer(1, startSample) : nullptr;
 
+            auto curPan = static_cast<float>(*pan);
+
             while (--numSamples >= 0)
             {
                 auto pos = (int) sourceSamplePosition;
@@ -277,8 +264,8 @@ public:
                 float l = (inL[pos] * invAlpha + inL[pos + 1] * alpha);
                 float r = (inR != nullptr) ? (inR[pos] * invAlpha + inR[pos + 1] * alpha) : l;
 
-                l *= lgain * jmin(1.0f - *pan, 1.0f);
-                r *= rgain * jmin(1.0f + *pan, 1.0f);
+                l *= lgain * jmin(1.0f - curPan, 1.0f);
+                r *= rgain * jmin(1.0f + curPan, 1.0f);
 
                 if (isInAttack)
                 {
@@ -327,23 +314,38 @@ public:
                     break;
                 }
             }
-        }
 
+            // Levels
+            auto curGain = static_cast<float>(*level);
+
+            if (*muteEnabled) { curGain = 0; }
+
+            if (curGain == prevGain)
+                outputBuffer.applyGain(curGain);
+            else
+            {
+                outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
+                outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
+                prevGain = curGain;
+            }
+        }
     }
 
     void pitchWheelMoved(int newPitchWheelValue) override { }
 
     void controllerMoved(int controllerNumber, int newControllerValue) { }
 
+    std::atomic<float>* level;
     std::atomic<float>* pan;
     std::atomic<float>* coarse;
     std::atomic<float>* fine;
-    //float *pan, *coarse, *fine;
-//	ADSR *env;
+    std::atomic<float>* muteEnabled;
+    std::atomic<float>* soloEnabled;
+    float prevGain;
 
 private:
-    float semitones = 0.0; // 36.0 
-    float cents = 0.0; // 100.0;
+    float semitones = 0.0;
+    float cents = 0.0;
     double pitchRatio = 0;
     double sourceSamplePosition = 0;
     float lgain = 0, rgain = 0, attackReleaseLevel = 0, attackDelta = 0, releaseDelta = 0;

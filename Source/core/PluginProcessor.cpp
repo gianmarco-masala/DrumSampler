@@ -108,35 +108,53 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
     return params;
 }
 
+static MidiBuffer filterMidiMessagesForChannel(const MidiBuffer& input, int channel)
+{
+    MidiBuffer output;
+
+    for (const auto metadata : input)
+    {
+        const auto message = metadata.getMessage();
+
+        if (message.getChannel() == channel)
+            output.addEvent(message, metadata.samplePosition);
+    }
+
+    return output;
+}
+
 //==============================================================================
 DrumProcessor::DrumProcessor()
     : AudioProcessor(BusesProperties()
         .withOutput("Master", AudioChannelSet::stereo(), true)
-        .withOutput("Kick", AudioChannelSet::stereo(), false)
-        .withOutput("Snare", AudioChannelSet::stereo(), false)
-        .withOutput("Tom 1", AudioChannelSet::stereo(), false)
-        .withOutput("Tom 2", AudioChannelSet::stereo(), false)
-        .withOutput("Tom 3", AudioChannelSet::stereo(), false)
-        .withOutput("HiHat", AudioChannelSet::stereo(), false)
-        .withOutput("Overhead", AudioChannelSet::stereo(), false)
+        //.withOutput("Kick", AudioChannelSet::stereo(), false)
+        //.withOutput("Snare", AudioChannelSet::stereo(), false)
+        //.withOutput("Tom 1", AudioChannelSet::stereo(), false)
+        //.withOutput("Tom 2", AudioChannelSet::stereo(), false)
+        //.withOutput("Tom 3", AudioChannelSet::stereo(), false)
+        //.withOutput("HiHat", AudioChannelSet::stereo(), false)
+        //.withOutput("Overhead", AudioChannelSet::stereo(), false)
     )
     , parameters(*this, nullptr, Identifier("DrumSamplerVTS"), createParameterLayout())
 {
-    // RETRIEVE DRUMSET INFO
+    // Retrieve drumset info
     outputs = drumsetInfo.getActiveOutputs();
     maxOutputs = outputs.size();
-    auto note = 72; // Start note
+    int note = startNote;
 
     // Generate a synth for each active output and attach parameters
     for (auto channel = 0; channel < maxOutputs; channel++)
     {
         Logger::getCurrentLogger()->writeToLog(outputs[channel]);
         synth.add(
-            new DrumSynth(parameters, outputs[channel], channel, note++)
-        );
+            new DrumSynth(
+            parameters,
+            outputs[channel],
+            channel,
+            note++
+        ));
+
         attachChannelParams(channel);
-        isChannelMuteEnabled[channel] = false;
-        isSoloEnabled[channel] = false;
     }
 
     // Attach master parameters
@@ -150,19 +168,15 @@ DrumProcessor::~DrumProcessor()
 void DrumProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     ignoreUnused(samplesPerBlock);
-    auto lastSampleRate = sampleRate;
     String message;
-    outputs = drumsetInfo.getActiveOutputs();
-
-    for (auto channel = 0; channel < maxOutputs; channel++)
-        previousChannelGain[channel] = *level[channel];
-
-    previousMasterGain = *masterLevel;
-
     message << "Preparing to play audio...\n";
     message << " samplesPerBlock = " << samplesPerBlock << "\n";
     message << " sampleRate = " << sampleRate;
     Logger::getCurrentLogger()->writeToLog(message);
+
+    auto lastSampleRate = sampleRate;
+    outputs = drumsetInfo.getActiveOutputs();
+    prevGain = *level;
 
     for (auto midiChannel = 0; midiChannel < maxOutputs; ++midiChannel)
         synth[midiChannel]->setCurrentPlaybackSampleRate(lastSampleRate);
@@ -197,91 +211,72 @@ bool DrumProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 }
 #endif
 
-void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
+void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuffer)
 {
     ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     //auto busCount = getBusCount(false);
 
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    // Clear buffer before fill it
+    for (auto i = 0; i < totalNumOutputChannels; i++)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    // Copy value from parameters (for master channel)
-    auto curMasterGain = static_cast<float>(*masterLevel);
-    auto curMasterPan = static_cast<float>(*masterPan);
-    auto isMasterMuteEnabled = *masterMute > 0.5f ? true : false;
+    // Copy param values
+    auto curGain = static_cast<float>(*level);
+    auto curPan = static_cast<float>(*pan);
+    auto isMuteEnabled = *muteEnabled > 0.5f ? true : false;
 
-    // Channels management
-    for (auto busNr = 0; busNr < maxOutputs; ++busNr)
+    // Pass midi messages to each synth so 
+    // they can fill the output buffer
+    for (auto chNr = 0; chNr < maxOutputs; chNr++)
     {
-        // Copy value from parameters
-        auto curChannelGain = static_cast<float>(*level[busNr]);
-
-        //if (!allSoloDisabled()) {
-        //	if (busNr != *getSoloChannel())
-        //		;
-        //}
-
-        //std::unique_ptr<AudioSampleBuffer> channelData;
-        //channelData.reset(new AudioSampleBuffer(buffer.getNumChannels(), buffer.getNumSamples()));
-
-        synth[busNr]->renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
-
-        if (isChannelMuteEnabled[busNr]) { curChannelGain = 0; }
-
-        if (curChannelGain == previousChannelGain[busNr])
-            buffer.applyGain(curChannelGain);
-        else
-        {
-            buffer.applyGainRamp(0, buffer.getNumSamples(), previousChannelGain[busNr], curChannelGain);
-            previousChannelGain[busNr] = curChannelGain;
-        }
+        synth[chNr]->renderNextBlock(buffer, midiBuffer, 0, buffer.getNumSamples());
     }
 
-    // Master management
-
+    // Write buffer to output after applying levels
     float* outL = buffer.getWritePointer(0);
     float* outR = buffer.getNumChannels() > 1 ? buffer.getWritePointer(1) : nullptr;
     auto numSamples = buffer.getNumSamples();
-    // Mute
-    if (isMasterMuteEnabled) { curMasterGain = 0; }
-    // Level and Pan
-    if (curMasterGain == previousMasterGain)
+
+    if (isMuteEnabled) { curGain = 0; }
+
+    if (curGain == prevGain)
     {
+        // Normal behaviour
         while (--numSamples >= 0)
         {
             if (outR != nullptr)
             {
-                *outL++ *= curMasterGain * jmin(1.0f - curMasterPan, 1.0f);
-                *outR++ *= curMasterGain * jmin(1.0f + curMasterPan, 1.0f);
+                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
+                *outR++ *= curGain * jmin(1.0f + curPan, 1.0f);
             }
             else
             {
-                *outL++ *= curMasterGain * jmin(1.0f - curMasterPan, 1.0f);
+                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
             }
         }
     }
     else
     {
+        // Creates fades between audio blocks 
+        // if level param is changing
         while (--numSamples >= 0)
         {
             if (outR != nullptr)
             {
-                *outL++ *= curMasterGain * jmin(1.0f - curMasterPan, 1.0f);
-                *outR++ *= curMasterGain * jmin(1.0f + curMasterPan, 1.0f);
+                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
+                *outR++ *= curGain * jmin(1.0f + curPan, 1.0f);
             }
             else
             {
-                *outL++ *= curMasterGain * jmin(1.0f - curMasterPan, 1.0f);
+                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
             }
         }
-        buffer.applyGainRamp(0, buffer.getNumSamples(), previousMasterGain, curMasterGain);
-        previousMasterGain = curMasterGain;
+        buffer.applyGainRamp(0, buffer.getNumSamples(), prevGain, curGain);
+        prevGain = curGain;
     }
 }
 
-//==============================================================================
 void DrumProcessor::getStateInformation(MemoryBlock& destData)
 {
     auto state = parameters.copyState();
@@ -297,24 +292,16 @@ void DrumProcessor::setStateInformation(const void* data, int sizeInBytes)
             parameters.replaceState(ValueTree::fromXml(*xmlState));
 }
 
-/*
- * Attach registered parameter values to corresponding pointers for master channel
- */
 void DrumProcessor::attachMasterParams()
 {
-    masterLevel = parameters.getRawParameterValue("pMasterLevel");
-    masterPan = parameters.getRawParameterValue("pMasterPan");
-    masterMute = parameters.getRawParameterValue("pMasterMute");
+    level = parameters.getRawParameterValue("pMasterLevel");
+    pan = parameters.getRawParameterValue("pMasterPan");
+    muteEnabled = parameters.getRawParameterValue("pMasterMute");
 }
 
-/*
- * Attach registered parameter values to corresponding pointers for each inst channel
- */
 void DrumProcessor::attachChannelParams(int midiChannel)
 {
-    String paramID = "p";
-    paramID.clear();
-    paramID = "p";
+    String paramID;
 
     // Parametri Canali
     auto channelName = outputs[midiChannel];
@@ -328,27 +315,27 @@ void DrumProcessor::attachChannelParams(int midiChannel)
 
             // Level
             paramID << "p";
-            level[midiChannel] = parameters.getRawParameterValue(paramID << channelName << "Level");
-            paramID.clear();
-
-            // Mute
-            paramID << "p";
-            isChannelMuteEnabled[midiChannel] = parameters.getRawParameterValue(paramID << channelName << "Mute");
-            paramID.clear();
-
-            // Solo
-            paramID << "p";
-            isSoloEnabled[midiChannel] = parameters.getRawParameterValue(paramID << channelName << "Solo");
-            paramID.clear();
-
-            // Learn
-            paramID << "p";
-            synth[midiChannel]->attachMidiLearn(parameters.getRawParameterValue(paramID << channelName << "Learn"));
+            currentVoice->level = parameters.getRawParameterValue(paramID << channelName << "Level");
             paramID.clear();
 
             // Pan
             paramID << "p";
             currentVoice->pan = parameters.getRawParameterValue(paramID << channelName << "Pan");
+            paramID.clear();
+
+            // Mute
+            paramID << "p";
+            currentVoice->muteEnabled = parameters.getRawParameterValue(paramID << channelName << "Mute");
+            paramID.clear();
+
+            // Solo
+            paramID << "p";
+            currentVoice->soloEnabled = parameters.getRawParameterValue(paramID << channelName << "Solo");
+            paramID.clear();
+
+            // Learn
+            paramID << "p";
+            synth[midiChannel]->attachMidiLearn(parameters.getRawParameterValue(paramID << channelName << "Learn"));
             paramID.clear();
 
             // Coarse

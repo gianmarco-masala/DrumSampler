@@ -1,16 +1,19 @@
 #pragma once
 
-#define MAX_INSTRUMENTS 8
-
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "../core/PluginEditor.h"
 #include "DrumSynth.h"
 #include "../utils/DrumsetXmlHandler.h"
-//#include "../envelope/ADSR.h"
 
 class DrumProcessor : public AudioProcessor
 {
 public:
+    enum PluginOptions
+    {
+        maxMidiChannel = 8,
+        startNote = 72
+    };
+
     DrumProcessor();
     ~DrumProcessor();
 
@@ -44,85 +47,35 @@ public:
 
     bool canAddBus(bool isInput) const override
     {
-        return (!isInput && getBusCount(false) < MAX_INSTRUMENTS);
+        return (!isInput && getBusCount(false) < maxMidiChannel);
     }
     bool canRemoveBus(bool isInput) const override
     {
         return (!isInput && getBusCount(false) > 1);
     }
 
-    // CUSTOM METHODS
-    void attachMasterParams();
-    void attachChannelParams(int i);
-
-    // Used in GUI to trigger mute and solo.
-    // A negative index value will trigger the master channel
-    void setMuteEnabled(const bool shouldBeEnabled, int index)
-    {
-        if (index >= 0)
-            isChannelMuteEnabled[index] = shouldBeEnabled;
-        else
-            parameters.getParameter("pMasterMute")->setValue(shouldBeEnabled);
-    }
-
-    void setSoloEnabled(const bool shouldBeEnabled, int index)
-    {
-        if (index >= 0)
-            isSoloEnabled[index] = shouldBeEnabled;
-    }
-
-    int* getSoloChannel()
-    {
-        for (auto channel = 0; channel < MAX_INSTRUMENTS; channel++)
-        {
-            if (isSoloEnabled[channel])
-                return &channel;
-        }
-        return nullptr;
-    }
-
-    bool allSoloDisabled()
-    {
-        for (auto channel = 0; channel < MAX_INSTRUMENTS; channel++)
-        {
-            if (outputs[channel] == "Empty")
-                break;
-            else
-            {
-                if (isSoloEnabled[channel])
-                    return false;
-            }
-        }
-        return true;
-    }
-
-
     OwnedArray<DrumSynth> synth;
     StringArray outputs;
 
 private:
+    // Attach registered parameter values to 
+    // corresponding pointers for master channel
+    void attachMasterParams();
+    // Attach registered parameter values to 
+    // corresponding pointers for given inst channel
+    void attachChannelParams(int i);
+
     juce::AudioProcessorValueTreeState parameters;
     //UndoManager undoManager;
     DrumsetXmlHandler drumsetInfo;
     int maxOutputs;
 
     // Pointers to parameters, used by processor
-    std::atomic<float>* level[MAX_INSTRUMENTS];
-    std::atomic<float>* pan[MAX_INSTRUMENTS];
-    std::atomic<float>* masterLevel = nullptr;
-    std::atomic<float>* masterPan = nullptr;
-    std::atomic<float>* masterMute = nullptr;
+    std::atomic<float>* level = nullptr;
+    std::atomic<float>* pan = nullptr;
+    std::atomic<float>* muteEnabled = nullptr;
 
-    //==============================================================================
-
-    // Creates fades in audio blocks when changing levels
-    float previousChannelGain[MAX_INSTRUMENTS];
-    float previousMasterGain;
-
-    // Mute and solo booleans
-    bool isChannelMuteEnabled[MAX_INSTRUMENTS];
-    bool isSoloEnabled[MAX_INSTRUMENTS];
-    bool isLearnEnabled[MAX_INSTRUMENTS];
+    float prevGain;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumProcessor)
 };

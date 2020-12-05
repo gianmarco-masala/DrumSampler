@@ -446,7 +446,7 @@ void  DrumEditor::drawChannel(int startX,
 {
     auto windowWidth = getWidth() - 30;
     auto windowHeight = getHeight() - 30;
-    auto groupWidth = windowWidth / (MAX_INSTRUMENTS + 1); // per fare spazio al master
+    auto groupWidth = windowWidth / (processor.maxMidiChannel + 1); // per fare spazio al master
     auto groupHeight = windowHeight;
     auto buttonWidth = 50;
     auto buttonHeight = 50;
