@@ -79,25 +79,23 @@ public:
     void getStateInformation(MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    bool canAddBus(bool isInput) const override
-    {
-        return (!isInput && getBusCount(false) < maxMidiChannel);
-    }
-    bool canRemoveBus(bool isInput) const override
-    {
-        return (!isInput && getBusCount(false) > 1);
-    }
+    bool canAddBus(bool isInput) const override { return (!isInput && getBusCount(false) < maxMidiChannel); }
+    bool canRemoveBus(bool isInput) const override { return (!isInput && getBusCount(false) > 1); }
 
     juce::OwnedArray<DrumSynth> synth;
     juce::StringArray outputs;
 
 private:
-    // Attach registered parameter values to 
-    // corresponding pointers for master channel
+    /*
+    * Attach registered parameter values to
+    * corresponding pointers for master channel
+    */
     void attachMasterParams();
 
-    // Attach registered parameter values to 
-    // corresponding pointers for given inst channel
+    /*
+    * Attach registered parameter values to
+    * corresponding pointers for given inst channel
+    */
     void attachChannelParams(int i);
 
     // Check if there are buffers to free
@@ -110,6 +108,7 @@ private:
     //UndoManager undoManager;
     int maxOutputs;
     bool buffersAllocated = false;
+    bool pluginIsInit = false;
     int sampleBlockInitCount = 2;
 
     // Pointers to parameters, used by processor

@@ -143,22 +143,14 @@ DrumProcessor::DrumProcessor()
     maxOutputs = outputs.size();
     int note = startNote;
 
-    // Generate a synth for each active output and attach parameters
+    // Generate a synth for each active output, then attach parameters
     for (auto channel = 0; channel < maxOutputs; channel++)
     {
         DBG(outputs[channel]);
-        synth.add(
-            new DrumSynth(
-                parameters,
-                outputs[channel],
-                channel,
-                note++
-            ));
-
+        synth.add(new DrumSynth(parameters, outputs[channel], note++));
         attachChannelParams(channel);
     }
 
-    // Attach master parameters
     attachMasterParams();
 }
 
@@ -178,37 +170,26 @@ void DrumProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     outputs = drumsetInfo.getActiveOutputs();
     prevGain = *level;
 
-    // Update block size
-    if (lastBlockSize != samplesPerBlock)
-        lastBlockSize = samplesPerBlock;
-
     // Prepare outputs
     for (auto midiChannel = 0; midiChannel < maxOutputs; ++midiChannel)
     {
         synth[midiChannel]->setCurrentPlaybackSampleRate(lastSampleRate);
 
+        // If host changes block size while plugin is running,
+        // update size and recreate bufferswith new one.
+        if (pluginIsInit && lastBlockSize != samplesPerBlock) {
+            buffers.clear();
+            buffersAllocated = false;
+        }
+
         if (!buffersAllocated && sampleBlockInitCount == 0)
         {
             ReferenceCountedBuffer::Ptr newBuffer = new ReferenceCountedBuffer(outputs[midiChannel],
                                                                                getMainBusNumOutputChannels(),
-                                                                               lastBlockSize);
+                                                                               samplesPerBlock);
             buffers.add(newBuffer);
+            lastBlockSize = samplesPerBlock;
         }
-        //else {
-            // Resize tempBuffers to match current block
-            //if (tempBuffers[midiChannel]->getNumChannels() != getMainBusNumOutputChannels()
-            //        || tempBuffers[midiChannel]->getNumSamples() != lastBlockSize) 
-            //{
-            //    tempBuffers[midiChannel]->setSize(
-            //        getNumOutputChannels(),
-            //        lastBlockSize,
-            //        false,
-            //        true,
-            //        false
-            //    );
-            //    tempBuffers[midiChannel]->clear();
-            //}
-        //}
     }
 
     // This method gets called 4 times.
@@ -216,10 +197,14 @@ void DrumProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     // then we wait for the later calls in order
     // to get the actual block size from host.
     if (sampleBlockInitCount > 0)
+    {
         sampleBlockInitCount--;
+    }
     else
+    {
         buffersAllocated = true;
-
+        pluginIsInit = true;
+    }
 }
 
 void DrumProcessor::releaseResources()
@@ -255,90 +240,65 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuff
 {
     ScopedNoDenormals noDenormals;
     auto totalNumOutputChannels = getMainBusNumOutputChannels();
+    auto numSamples = buffer.getNumSamples();
+    auto numChannels = buffer.getNumChannels();
     //auto busCount = getBusCount(false);
 
     // Clear buffer before fill it
     for (auto i = 0; i < totalNumOutputChannels; i++)
-        buffer.clear(i, 0, buffer.getNumSamples());
+        buffer.clear(i, 0, numSamples);
 
     // Copy param values
-    auto curGain = static_cast<float>(*level);
-    auto curPan = static_cast<float>(*pan);
     auto isMuteEnabled = *muteEnabled > 0.5f ? true : false;
-    auto numSamples = buffer.getNumSamples();
-    auto numChannels = buffer.getNumChannels();
+    auto curPan = pan->load();
+    auto curGain = isMuteEnabled ? 0.0f : level->load();
 
-    // Pass midi messages to each synth so 
-    // they can fill the output buffer
-
-    if (buffersAllocated)
+    if (buffersAllocated) // ignore synth buffers if not allocated yet
     {
-
-        // Resize tempBuffers to match current block
-        //if (lastBlockSize != buffer.getNumSamples()) {
-        //    // Update block size
-        //    lastBlockSize = buffer.getNumSamples();
-
-        //    for (auto chBuffer : tempBuffers)
-        //        chBuffer->setSize(buffer.getNumChannels(), lastBlockSize);
-        //}
-
-        for (auto chNr = 0; chNr < maxOutputs; chNr++)
+        // Fill each synth buffer
+        for (auto i = 0; i < maxOutputs; i++)
         {
-            currentBuffer = buffers[chNr];
+            currentBuffer = buffers[i];
 
             if (currentBuffer == nullptr)
-                jassertfalse; // currentBuffer has to exist. @todo: manage this exception
+                jassertfalse; // currentBuffer has to exist. @todo: gestire eccezione
 
             currentBuffer->getAudioSampleBuffer()->clear();
 
-            synth[chNr]->renderNextBlock(*currentBuffer->getAudioSampleBuffer(), midiBuffer, 0, buffer.getNumSamples());
+            // Pass midi messages to each synth so they can fill their buffer
+            synth[i]->renderNextBlock(*currentBuffer->getAudioSampleBuffer(), midiBuffer, 0, buffer.getNumSamples());
 
-            // @todo: Levels
-
+            // Add to main output buffer
             for (auto ch = 0; ch < numChannels; ch++)
-                buffer.addFrom(ch, 0, *currentBuffer->getAudioSampleBuffer()->getArrayOfReadPointers(), numSamples);
+                buffer.addFrom(ch, 0, currentBuffer->getAudioSampleBuffer()->getReadPointer(ch), numSamples);
         }
     }
 
-    // Write buffer to output after applying levels
+    // Write main buffer to output applying levels
     float* outL = buffer.getWritePointer(0);
     float* outR = numChannels > 1 ? buffer.getWritePointer(1) : nullptr;
 
-    if (isMuteEnabled) { curGain = 0; }
+    while (--numSamples >= 0)
+    {
+        if (outR != nullptr)
+        {
+            *outL++ *= jmin(1.0f - curPan, 1.0f);
+            *outR++ *= jmin(1.0f + curPan, 1.0f);
+        }
+        else
+        {
+            *outL++ *= jmin(1.0f - curPan, 1.0f);
+        }
+    }
 
     if (curGain == prevGain)
     {
-        // Normal behaviour
-        while (--numSamples >= 0)
-        {
-            if (outR != nullptr)
-            {
-                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
-                *outR++ *= curGain * jmin(1.0f + curPan, 1.0f);
-            }
-            else
-            {
-                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
-            }
-        }
+        buffer.applyGain(curGain);
     }
     else
     {
         // Creates fades between audio blocks 
         // if level param is changing
-        while (--numSamples >= 0)
-        {
-            if (outR != nullptr)
-            {
-                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
-                *outR++ *= curGain * jmin(1.0f + curPan, 1.0f);
-            }
-            else
-            {
-                *outL++ *= curGain * jmin(1.0f - curPan, 1.0f);
-            }
-        }
         buffer.applyGainRamp(0, buffer.getNumSamples(), prevGain, curGain);
         prevGain = curGain;
     }

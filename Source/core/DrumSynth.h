@@ -18,7 +18,6 @@ public:
     DrumSynth(
         AudioProcessorValueTreeState& vts,
         const String name,
-        const int index,
         const int defaultNote
     )
         : parameters(vts)
@@ -35,6 +34,11 @@ public:
     ~DrumSynth()
     { }
 
+    /*
+    * Handles incoming midi events inside the midi buffer
+    * passed by the processor.
+    * Override of juce:Synthesiser method.
+    */
     void handleMidiEvent(const MidiMessage& m) override
     {
         const int channel = m.getChannel();
@@ -86,6 +90,10 @@ public:
         }
     }
 
+    /*
+    * Triggers a note on message.
+    * Override of juce:Synthesiser method.
+    */
     void noteOn(const int midiChannel,
                  const int midiNoteNumber,
                  const float velocity)	override
@@ -104,6 +112,9 @@ public:
         }
     }
 
+    /*
+    * Updates- each sound's playing note with given midi note.
+    */
     void midiLearn(const MidiMessage& msg)
     {
         note = msg.getNoteNumber();
@@ -115,9 +126,17 @@ public:
         }
     }
 
+    /*
+    * Links midi learn with the pointer passed as argument.
+    * Used to attach processor parameter.
+    */
     void attachMidiLearn(std::atomic<float>* ptr) { learnEnabled = ptr; }
 
 private:
+    /*
+    * Adds new sounds to this synth.
+    * Each sound will start a thread and read a file from disk
+    */
     void addSounds()
     {
         Range<float> velocityRange;
@@ -130,12 +149,12 @@ private:
             velocityRange.setStart(start);
             velocityRange.setEnd(start + lenght);
 
-            for (index = 1; index <= maxSoundsPerRange; index++)
+            for (auto i = 1; i <= maxSoundsPerRange; i++)
             {
                 addSound(sound = new DrumSound());
                 sound->setName(chName);
                 sound->setVelocityRange(velocityRange);
-                sound->setIndex(index);
+                sound->setIndex(i);
                 sound->setMidiNote(note);
             }
             start += lenght;
@@ -144,7 +163,10 @@ private:
         }
     }
 
-    // For debugging purposes only
+    /*
+    * Prints active voices preceeded by a "note on" flag.
+    * For debugging purposes only.
+    */
     void voicesToLog(int midiNote, float velocity)
     {
         if (velocity > 0.0f)
@@ -174,8 +196,6 @@ private:
 
         DBG(msg);
 
-
-
         // Print the last active voice
         //for (int i = numVoices - 1; i >= 0; i--)
         //{
@@ -197,7 +217,7 @@ private:
     bool shouldStealNotes = true;
     bool mutingEnabled = false;
     String chName;
-    int index, note;
+    int note;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSynth)
 };

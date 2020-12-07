@@ -61,6 +61,9 @@ public:
     File workingDirectory;
 
 private:
+    /*
+    * Handles thread execution inside a continous loop.
+    */
     void run()
     {
         while (!threadShouldExit())
@@ -74,6 +77,9 @@ private:
         }
     }
 
+    /*
+    * Sets the reference path for this sound.
+    */
     void setPath()
     {
         String msg;
@@ -105,6 +111,9 @@ private:
     // in base a cosa trovo dentro la cartella mi ricavo num velocity ranges e round robin 
 
 
+    /*
+    * Reads a file from given path and loads it to a local AudioBuffer<float>
+    */
     void readFromPath(String pathToOpen)
     {
         if (pathToOpen.isNotEmpty())
@@ -158,66 +167,30 @@ private:
 class DrumVoice : public SynthesiserVoice
 {
 public:
-    DrumVoice()
-    { }
+    DrumVoice() { }
 
-    ~DrumVoice()
-    { }
+    ~DrumVoice() { }
 
-    // Check if passed sound is a correct DrumSound type.
-    // Return nullptr otherwise.
-    bool canPlaySound(SynthesiserSound* sound) override
-    {
-        return dynamic_cast<DrumSound*> (sound) != nullptr;
-    }
+    /* 
+    * Checks if given sound has correct DrumSound type.
+    * Returns nullptr otherwise.
+    * Overrides juce:Synthesiser method
+    */
+    bool canPlaySound(SynthesiserSound* sound) override { return dynamic_cast<DrumSound*> (sound) != nullptr; }
 
-    void startNote(int midiNoteNumber, float velocity, SynthesiserSound* s, int /*currentPitchWheelPosition*/) override
+    /*
+    * Prepares synth to start a note setting up values
+    * Overrides juce:Synthesiser method
+    */
+    void startNote(int /*midiNoteNumber*/, float velocity, SynthesiserSound* s, int /*currentPitchWheelPosition*/) override
     {
         if (auto* sound = dynamic_cast<const DrumSound*> (s))
         {
             semitones = *coarse;
             cents = *fine;
-
-            // Collego i puntatori ai rispettivi valori
-            //auto initVoice = [this] (DrumVoice& voice)
-            //{
-            //	env = playingSound->getEnvelope();
-            //	env->reset();
-            //	env->gate(true);
-            //};
-            // Apro l'inviluppo
-            //env = playingSound->getEnvelope();
-            //env->reset();
-            //env->gate(true);
-
-            attackSamples = roundToInt(attackTime * sound->reader->sampleRate);
-            releaseSamples = roundToInt(releaseTime * sound->reader->sampleRate);
+            sourceSamplePosition = 0.0;
             pitchRatio = std::pow(2.0, (semitones + cents * 0.01) / 12.0)
                 * sound->reader->sampleRate / getSampleRate();
-
-            sourceSamplePosition = 0.0;
-            lgain = 1.0f/*velocity*/;
-            rgain = 1.0f/*velocity*/;
-
-            isInAttack = (attackSamples > 0);
-            isInRelease = false;
-
-
-            if (isInAttack)
-            {
-                attackReleaseLevel = 0.0f;
-                attackDelta = (float) (pitchRatio / attackSamples);
-            }
-            else
-            {
-                attackReleaseLevel = 1.0f;
-                attackDelta = 0.0f;
-            }
-
-            if (releaseSamples > 0)
-                releaseDelta = (float) (-pitchRatio / releaseSamples);
-            else
-                releaseDelta = -1.0f;
         }
         else
         {
@@ -226,42 +199,37 @@ public:
 
     }
 
-    void stopNote(float /*velocity*/, bool allowTailOff) override
+    /*
+    * Stops the current playing note. 
+    * We're actually not using this because it does not fit plugin's goal
+    */
+    void stopNote(float velocity, bool allowTailOff) override
     {
-        if (allowTailOff)
-        {
-            isInAttack = false;
-            isInRelease = true;
-        }
-        else
-        {
-            /*if (env->getState() == ADSR::env_idle)*/
-            clearCurrentNote();
-        }
+        ignoreUnused(velocity, allowTailOff);
+        clearCurrentNote();
     }
 
+    /*
+    * Renders the current sample block for this synth.
+    * Overrides juce:Synthesiser method
+    */
     void renderNextBlock(AudioSampleBuffer& outputBuffer, int startSample, int numSamples) override
     {
         if (auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get()))
         {
-            // Levels
             auto& data = *playingSound->data;
             isMuteEnabled = *muteEnabled > 0.5f ? true : false;
             isSoloEnabled = *soloEnabled > 0.5f ? true : false;
-            auto curPan = static_cast<float>(*pan);
-            auto curGain = isMuteEnabled ? 0.0f : static_cast<float>(*level);
+            auto curPan = pan->load();
+            auto curGain = isMuteEnabled ? 0.0f : level->load();
 
-            // Declare read pointers
             const float* const inL = data.getReadPointer(0);
             const float* const inR = data.getNumChannels() > 1 ? data.getReadPointer(1) : nullptr;
 
-            // Declare write pointers
             float* outL = outputBuffer.getWritePointer(0, startSample);
             float* outR = outputBuffer.getNumChannels() > 1 ? outputBuffer.getWritePointer(1, startSample) : nullptr;
 
             // Fill buffer with samples
-            //for (int SN = startSample; SN < (startSample + numSamples); SN++)
-            //while (startSample + numSamples >= 0)
             while (--numSamples >= 0)
             {
                 auto pos = (int) sourceSamplePosition;
@@ -272,45 +240,14 @@ public:
                 float l = (inL[pos] * invAlpha + inL[pos + 1] * alpha);
                 float r = (inR != nullptr) ? (inR[pos] * invAlpha + inR[pos + 1] * alpha) : l;
 
-                l *= lgain * jmin(1.0f - curPan, 1.0f);
-                r *= rgain * jmin(1.0f + curPan, 1.0f);
-
-                if (isInAttack)
-                {
-                    l *= attackReleaseLevel;
-                    r *= attackReleaseLevel;
-
-                    attackReleaseLevel += attackDelta;
-
-                    if (attackReleaseLevel >= 1.0f)
-                    {
-                        attackReleaseLevel = 1.0f;
-                        isInAttack = false;
-                    }
-                }
-                else if (isInRelease)
-                {
-                    l *= attackReleaseLevel;
-                    r *= attackReleaseLevel;
-
-                    attackReleaseLevel += releaseDelta;
-
-                    if (attackReleaseLevel <= 0.0f)
-                    {
-                        stopNote(0.0f, false);
-                        break;
-                    }
-                }
-
-                // passaggio campione al buffer di uscita
                 if (outR != nullptr)
                 {
-                    *outL++ += l; // * env->process();
-                    *outR++ += r; // * env->process();
+                    *outL++ += l * jmin(1.0f - curPan, 1.0f);
+                    *outR++ += r * jmin(1.0f + curPan, 1.0f);
                 }
                 else
                 {
-                    *outL++ += (l + r) * 0.5f; // * env->process();
+                    *outL++ += (l + r) * 0.5f;
                 }
 
                 // Increment sample position and break
@@ -319,27 +256,34 @@ public:
                 if (sourceSamplePosition >= playingSound->lenght)
                 {
                     stopNote(0.0f, false);
-                    //	env->gate(false);
                     break;
                 }
             }
 
-            // Apply level to buffer
-            outputBuffer.applyGain(curGain);
-
-            //if (curGain == prevGain)
-            //    outputBuffer.applyGain(curGain);
-            //else
-            //{
-            //    outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
-            //    outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
-            //    prevGain = curGain;
-            //}
+            // Level
+            if (curGain == prevGain)
+            {
+                outputBuffer.applyGain(curGain);
+            }
+            else
+            {
+                // Creates fades between audio blocks 
+                // if level param is changing
+                outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
+                prevGain = curGain;
+            }
         }
     }
 
+    /*
+    * Handle pitch wheel control.
+    * We're actually not using this because it does not fit plugin's goal
+    */
     void pitchWheelMoved(int newPitchWheelValue) override { }
 
+    /*
+    * Handle incoming controller messages.
+    */
     void controllerMoved(int controllerNumber, int newControllerValue) { }
 
     std::atomic<float>* level;
@@ -355,13 +299,8 @@ private:
     float cents = 0.0;
     double pitchRatio = 0;
     double sourceSamplePosition = 0;
-    float lgain = 0, rgain = 0, attackReleaseLevel = 0, attackDelta = 0, releaseDelta = 0;
-    bool isInAttack = false, isInRelease = false;
     bool isMuteEnabled = false;
     bool isSoloEnabled = false;
-    double attackTime, releaseTime;
-    int attackSamples = 0, releaseSamples = 0;
 
-    int voiceIndex;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumVoice)
 };
