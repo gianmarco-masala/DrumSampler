@@ -65,7 +65,8 @@ private:
     {
         while (!threadShouldExit())
         {
-            if (!isPathSet) {
+            if (!isPathSet)
+            {
                 setPath();
                 readFromPath(path);
             }
@@ -92,7 +93,7 @@ private:
             << ".aif";
 
         msg << "\nLoading Sample: \n" << path << "\n";
-        Logger::getCurrentLogger()->writeToLog(msg);
+        DBG(msg);
 
         isPathSet = true;
     }
@@ -153,7 +154,6 @@ private:
 };
 
 
-//==========================================================================================================================
 
 class DrumVoice : public SynthesiserVoice
 {
@@ -175,7 +175,6 @@ public:
     {
         if (auto* sound = dynamic_cast<const DrumSound*> (s))
         {
-            prevGain = *level;
             semitones = *coarse;
             cents = *fine;
 
@@ -245,15 +244,24 @@ public:
     {
         if (auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get()))
         {
+            // Levels
             auto& data = *playingSound->data;
+            isMuteEnabled = *muteEnabled > 0.5f ? true : false;
+            isSoloEnabled = *soloEnabled > 0.5f ? true : false;
+            auto curPan = static_cast<float>(*pan);
+            auto curGain = isMuteEnabled ? 0.0f : static_cast<float>(*level);
+
+            // Declare read pointers
             const float* const inL = data.getReadPointer(0);
             const float* const inR = data.getNumChannels() > 1 ? data.getReadPointer(1) : nullptr;
 
+            // Declare write pointers
             float* outL = outputBuffer.getWritePointer(0, startSample);
             float* outR = outputBuffer.getNumChannels() > 1 ? outputBuffer.getWritePointer(1, startSample) : nullptr;
 
-            auto curPan = static_cast<float>(*pan);
-
+            // Fill buffer with samples
+            //for (int SN = startSample; SN < (startSample + numSamples); SN++)
+            //while (startSample + numSamples >= 0)
             while (--numSamples >= 0)
             {
                 auto pos = (int) sourceSamplePosition;
@@ -305,9 +313,10 @@ public:
                     *outL++ += (l + r) * 0.5f; // * env->process();
                 }
 
+                // Increment sample position and break
+                // if we reached sound total length
                 sourceSamplePosition += pitchRatio;
-
-                if (sourceSamplePosition > playingSound->lenght)
+                if (sourceSamplePosition >= playingSound->lenght)
                 {
                     stopNote(0.0f, false);
                     //	env->gate(false);
@@ -315,19 +324,17 @@ public:
                 }
             }
 
-            // Levels
-            auto curGain = static_cast<float>(*level);
+            // Apply level to buffer
+            outputBuffer.applyGain(curGain);
 
-            if (*muteEnabled) { curGain = 0; }
-
-            if (curGain == prevGain)
-                outputBuffer.applyGain(curGain);
-            else
-            {
-                outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
-                outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
-                prevGain = curGain;
-            }
+            //if (curGain == prevGain)
+            //    outputBuffer.applyGain(curGain);
+            //else
+            //{
+            //    outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
+            //    outputBuffer.applyGainRamp(0, outputBuffer.getNumSamples(), prevGain, curGain);
+            //    prevGain = curGain;
+            //}
         }
     }
 
@@ -350,6 +357,8 @@ private:
     double sourceSamplePosition = 0;
     float lgain = 0, rgain = 0, attackReleaseLevel = 0, attackDelta = 0, releaseDelta = 0;
     bool isInAttack = false, isInRelease = false;
+    bool isMuteEnabled = false;
+    bool isSoloEnabled = false;
     double attackTime, releaseTime;
     int attackSamples = 0, releaseSamples = 0;
 

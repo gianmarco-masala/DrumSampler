@@ -5,6 +5,40 @@
 #include "DrumSynth.h"
 #include "../utils/DrumsetXmlHandler.h"
 
+
+class ReferenceCountedBuffer : public juce::ReferenceCountedObject
+{
+public:
+    typedef juce::ReferenceCountedObjectPtr<ReferenceCountedBuffer> Ptr;
+
+    ReferenceCountedBuffer (const juce::String& nameToUse,
+                            int numChannels,
+                            int numSamples)
+        : name (nameToUse),
+        buffer (numChannels, numSamples)
+    {
+        DBG (juce::String ("Buffer named '") + name + "' constructed. numChannels = " + juce::String (numChannels) + ", numSamples = " + juce::String (numSamples));
+    }
+
+    ~ReferenceCountedBuffer()
+    {
+        DBG (juce::String ("Buffer named '") + name + "' destroyed");
+    }
+
+    juce::AudioSampleBuffer* getAudioSampleBuffer()
+    {
+        return &buffer;
+    }
+
+    int position = 0;
+
+private:
+    juce::String name;
+    juce::AudioSampleBuffer buffer;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReferenceCountedBuffer)
+};
+
 class DrumProcessor : public AudioProcessor
 {
 public:
@@ -54,21 +88,29 @@ public:
         return (!isInput && getBusCount(false) > 1);
     }
 
-    OwnedArray<DrumSynth> synth;
-    StringArray outputs;
+    juce::OwnedArray<DrumSynth> synth;
+    juce::StringArray outputs;
 
 private:
     // Attach registered parameter values to 
     // corresponding pointers for master channel
     void attachMasterParams();
+
     // Attach registered parameter values to 
     // corresponding pointers for given inst channel
     void attachChannelParams(int i);
 
+    // Check if there are buffers to free
+    void checkForBuffersToFree();
+
+    juce::ReferenceCountedArray<ReferenceCountedBuffer> buffers;
+    ReferenceCountedBuffer::Ptr currentBuffer;
     juce::AudioProcessorValueTreeState parameters;
-    //UndoManager undoManager;
     DrumsetXmlHandler drumsetInfo;
+    //UndoManager undoManager;
     int maxOutputs;
+    bool buffersAllocated = false;
+    int sampleBlockInitCount = 2;
 
     // Pointers to parameters, used by processor
     std::atomic<float>* level = nullptr;
@@ -76,6 +118,7 @@ private:
     std::atomic<float>* muteEnabled = nullptr;
 
     float prevGain;
+    int lastBlockSize;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumProcessor)
 };

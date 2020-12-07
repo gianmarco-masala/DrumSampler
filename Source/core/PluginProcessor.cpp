@@ -24,27 +24,28 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
     // Create Master params
     params.add(std::make_unique<AudioParameterFloat>
         ("pMasterLevel",
-               "Master Level",
-               0.0f, 1.0f, 1.0f));
+         "Master Level",
+         0.0f, 1.0f, 1.0f));
     params.add(std::make_unique<AudioParameterFloat>
         ("pMasterPan",
-               "Master Pan",
-               -1.0f, 1.0f, 0.0f));
+         "Master Pan",
+         -1.0f, 1.0f, 0.0f));
     params.add(std::make_unique<AudioParameterBool>
         ("pMasterMute",
-               "Master Mute",
-               false));
+         "Master Mute",
+         false));
 
     // Create channels params
-    for (int i = 0; i < outputs.size(); i++) {
+    for (int i = 0; i < outputs.size(); i++)
+    {
         String curOut = outputs[i];
         paramID.clear();
         paramID << "p" << curOut;
 
         params.add(std::make_unique<AudioParameterFloat>
             (paramID << "Level",
-                   curOut << " Level",
-                   0.0f, 1.0f, 1.0f)
+             curOut << " Level",
+             0.0f, 1.0f, 1.0f)
         );
         curOut = outputs[i];
         paramID.clear();
@@ -52,8 +53,8 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
         params.add(std::make_unique<AudioParameterFloat>
             (paramID << "Pan",
-                   curOut << " Pan",
-                   -1.0f, 1.0f, 0.0f)
+             curOut << " Pan",
+             -1.0f, 1.0f, 0.0f)
         );
         curOut = outputs[i];
         paramID.clear();
@@ -61,8 +62,8 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
         params.add(std::make_unique<AudioParameterBool>
             (paramID << "Mute",
-                   curOut << " Mute",
-                   false)
+             curOut << " Mute",
+             false)
         );
         curOut = outputs[i];
         paramID.clear();
@@ -70,8 +71,8 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
         params.add(std::make_unique<AudioParameterBool>
             (paramID << "Solo",
-                   curOut << " Solo",
-                   false)
+             curOut << " Solo",
+             false)
         );
         curOut = outputs[i];
         paramID.clear();
@@ -79,8 +80,8 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
         params.add(std::make_unique<AudioParameterBool>
             (paramID << "Learn",
-                   curOut << " Learn",
-                   false)
+             curOut << " Learn",
+             false)
         );
         curOut = outputs[i];
         paramID.clear();
@@ -88,8 +89,8 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
         params.add(std::make_unique<AudioParameterFloat>
             (paramID << "Coarse",
-                   curOut << " Coarse",
-                   -36.0f, 36.0f, 0.0f)
+             curOut << " Coarse",
+             -36.0f, 36.0f, 0.0f)
         );
         curOut = outputs[i];
         paramID.clear();
@@ -97,8 +98,8 @@ AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
         params.add(std::make_unique<AudioParameterFloat>
             (paramID << "Fine",
-                   curOut << " Fine",
-                   -100.0f, 100.0f, 0.0f)
+             curOut << " Fine",
+             -100.0f, 100.0f, 0.0f)
         );
         curOut = outputs[i];
         paramID.clear();
@@ -125,8 +126,8 @@ static MidiBuffer filterMidiMessagesForChannel(const MidiBuffer& input, int chan
 
 //==============================================================================
 DrumProcessor::DrumProcessor()
-    : AudioProcessor(BusesProperties()
-        .withOutput("Master", AudioChannelSet::stereo(), true)
+    : juce::AudioProcessor(BusesProperties()
+        .withOutput("Master", juce::AudioChannelSet::stereo(), true)
         //.withOutput("Kick", AudioChannelSet::stereo(), false)
         //.withOutput("Snare", AudioChannelSet::stereo(), false)
         //.withOutput("Tom 1", AudioChannelSet::stereo(), false)
@@ -135,7 +136,7 @@ DrumProcessor::DrumProcessor()
         //.withOutput("HiHat", AudioChannelSet::stereo(), false)
         //.withOutput("Overhead", AudioChannelSet::stereo(), false)
     )
-    , parameters(*this, nullptr, Identifier("DrumSamplerVTS"), createParameterLayout())
+    , parameters(*this, nullptr, juce::Identifier("DrumSamplerVTS"), createParameterLayout())
 {
     // Retrieve drumset info
     outputs = drumsetInfo.getActiveOutputs();
@@ -145,14 +146,14 @@ DrumProcessor::DrumProcessor()
     // Generate a synth for each active output and attach parameters
     for (auto channel = 0; channel < maxOutputs; channel++)
     {
-        Logger::getCurrentLogger()->writeToLog(outputs[channel]);
+        DBG(outputs[channel]);
         synth.add(
             new DrumSynth(
-            parameters,
-            outputs[channel],
-            channel,
-            note++
-        ));
+                parameters,
+                outputs[channel],
+                channel,
+                note++
+            ));
 
         attachChannelParams(channel);
     }
@@ -167,24 +168,63 @@ DrumProcessor::~DrumProcessor()
 //==============================================================================
 void DrumProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    ignoreUnused(samplesPerBlock);
     String message;
     message << "Preparing to play audio...\n";
     message << " samplesPerBlock = " << samplesPerBlock << "\n";
     message << " sampleRate = " << sampleRate;
-    Logger::getCurrentLogger()->writeToLog(message);
+    DBG(message);
 
     auto lastSampleRate = sampleRate;
     outputs = drumsetInfo.getActiveOutputs();
     prevGain = *level;
 
+    // Update block size
+    if (lastBlockSize != samplesPerBlock)
+        lastBlockSize = samplesPerBlock;
+
+    // Prepare outputs
     for (auto midiChannel = 0; midiChannel < maxOutputs; ++midiChannel)
+    {
         synth[midiChannel]->setCurrentPlaybackSampleRate(lastSampleRate);
+
+        if (!buffersAllocated && sampleBlockInitCount == 0)
+        {
+            ReferenceCountedBuffer::Ptr newBuffer = new ReferenceCountedBuffer(outputs[midiChannel],
+                                                                               getMainBusNumOutputChannels(),
+                                                                               lastBlockSize);
+            buffers.add(newBuffer);
+        }
+        //else {
+            // Resize tempBuffers to match current block
+            //if (tempBuffers[midiChannel]->getNumChannels() != getMainBusNumOutputChannels()
+            //        || tempBuffers[midiChannel]->getNumSamples() != lastBlockSize) 
+            //{
+            //    tempBuffers[midiChannel]->setSize(
+            //        getNumOutputChannels(),
+            //        lastBlockSize,
+            //        false,
+            //        true,
+            //        false
+            //    );
+            //    tempBuffers[midiChannel]->clear();
+            //}
+        //}
+    }
+
+    // This method gets called 4 times.
+    // In the first 2 calls samplesPerBlock has an arbitrary value,
+    // then we wait for the later calls in order
+    // to get the actual block size from host.
+    if (sampleBlockInitCount > 0)
+        sampleBlockInitCount--;
+    else
+        buffersAllocated = true;
+
 }
 
 void DrumProcessor::releaseResources()
 {
-    Logger::getCurrentLogger()->writeToLog("Releasing audio resources");
+    DBG("Releasing audio resources");
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -214,7 +254,7 @@ bool DrumProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuffer)
 {
     ScopedNoDenormals noDenormals;
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    auto totalNumOutputChannels = getMainBusNumOutputChannels();
     //auto busCount = getBusCount(false);
 
     // Clear buffer before fill it
@@ -225,18 +265,45 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuff
     auto curGain = static_cast<float>(*level);
     auto curPan = static_cast<float>(*pan);
     auto isMuteEnabled = *muteEnabled > 0.5f ? true : false;
+    auto numSamples = buffer.getNumSamples();
+    auto numChannels = buffer.getNumChannels();
 
     // Pass midi messages to each synth so 
     // they can fill the output buffer
-    for (auto chNr = 0; chNr < maxOutputs; chNr++)
+
+    if (buffersAllocated)
     {
-        synth[chNr]->renderNextBlock(buffer, midiBuffer, 0, buffer.getNumSamples());
+
+        // Resize tempBuffers to match current block
+        //if (lastBlockSize != buffer.getNumSamples()) {
+        //    // Update block size
+        //    lastBlockSize = buffer.getNumSamples();
+
+        //    for (auto chBuffer : tempBuffers)
+        //        chBuffer->setSize(buffer.getNumChannels(), lastBlockSize);
+        //}
+
+        for (auto chNr = 0; chNr < maxOutputs; chNr++)
+        {
+            currentBuffer = buffers[chNr];
+
+            if (currentBuffer == nullptr)
+                jassertfalse; // currentBuffer has to exist. @todo: manage this exception
+
+            currentBuffer->getAudioSampleBuffer()->clear();
+
+            synth[chNr]->renderNextBlock(*currentBuffer->getAudioSampleBuffer(), midiBuffer, 0, buffer.getNumSamples());
+
+            // @todo: Levels
+
+            for (auto ch = 0; ch < numChannels; ch++)
+                buffer.addFrom(ch, 0, *currentBuffer->getAudioSampleBuffer()->getArrayOfReadPointers(), numSamples);
+        }
     }
 
     // Write buffer to output after applying levels
     float* outL = buffer.getWritePointer(0);
-    float* outR = buffer.getNumChannels() > 1 ? buffer.getWritePointer(1) : nullptr;
-    auto numSamples = buffer.getNumSamples();
+    float* outR = numChannels > 1 ? buffer.getWritePointer(1) : nullptr;
 
     if (isMuteEnabled) { curGain = 0; }
 
@@ -307,7 +374,8 @@ void DrumProcessor::attachChannelParams(int midiChannel)
     auto channelName = outputs[midiChannel];
     auto numVoices = synth[midiChannel]->getNumVoices();
 
-    if (numVoices != 0) {
+    if (numVoices != 0)
+    {
         for (auto i = 0; i < numVoices; i++)
         {
             auto currentVoice = static_cast<DrumVoice*>(synth[midiChannel]->getVoice(i));
@@ -364,5 +432,20 @@ void DrumProcessor::attachChannelParams(int midiChannel)
             ////				env->setReleaseRate(*curRelease * sampleRate);
             //paramID.clear();
         }
+    }
+}
+
+/*
+    Check if there are buffers to free
+*/
+void DrumProcessor::checkForBuffersToFree()
+{
+    // Iterate in reverse to avoid corrupting the array index access if we remove items
+    for (auto i = buffers.size(); --i >= 0;)
+    {
+        ReferenceCountedBuffer::Ptr buffer (buffers.getUnchecked (i));
+
+        if (buffer->getReferenceCount() == 2)
+            buffers.remove (i);
     }
 }

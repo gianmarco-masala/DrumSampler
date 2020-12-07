@@ -10,7 +10,7 @@ public:
     enum
     {
         maxSoundsPerRange = 1,
-        maxVoices = 10,
+        maxVoices = 100,
         numVelocityRange = 2
     };
 
@@ -55,6 +55,7 @@ public:
         }
         else if (m.isNoteOff())
         {
+            //DBG("is note off");
             //noteOff(channel, m.getNoteNumber(), m.getFloatVelocity(), true);
         }
         else if (m.isAllNotesOff() || m.isAllSoundOff())
@@ -97,14 +98,8 @@ public:
 
             if (sound->appliesTo(midiNoteNumber, velocity) && sound->appliesToChannel(midiChannel))
             {
-                // If hitting a note that's still ringing, stop it first (it could be
-                // still playing because of the sustain or sostenuto pedal).
-                for (auto* voice : voices)
-                    if (voice->getCurrentlyPlayingNote() == midiNoteNumber && voice->isPlayingChannel(midiChannel))
-                        stopVoice(voice, 1.0f, true);
-
-                startVoice(findFreeVoice(sound, midiChannel, midiNoteNumber, shouldStealNotes),
-                           sound, midiChannel, midiNoteNumber, velocity);
+                auto voice = findFreeVoice(sound, midiChannel, midiNoteNumber, shouldStealNotes);
+                startVoice(voice, sound, midiChannel, midiNoteNumber, velocity);
             }
         }
     }
@@ -135,7 +130,8 @@ private:
             velocityRange.setStart(start);
             velocityRange.setEnd(start + lenght);
 
-            for (index = 1; index <= maxSoundsPerRange; index++) {
+            for (index = 1; index <= maxSoundsPerRange; index++)
+            {
                 addSound(sound = new DrumSound());
                 sound->setName(chName);
                 sound->setVelocityRange(velocityRange);
@@ -148,26 +144,49 @@ private:
         }
     }
 
+    // For debugging purposes only
     void voicesToLog(int midiNote, float velocity)
     {
-        //		if(velocity > 0.0f)
-        //			Logger::getCurrentLogger()->writeToLog("                     <<<<<< tasto premuto");
+        if (velocity > 0.0f)
+            DBG("                     <<<<<< note on");
 
         int voiceIndex;
-        auto numVoices = getNumVoices();
+        int numVoices = getNumVoices();
         String msg;
 
-        for (int i = numVoices - 1; i >= 0; i--)
+        // Print all active voices
+        Array<int> activeVoices;
+        for (int i = 0; i < numVoices; i++)
         {
             voice = voices[i];
-            auto voiceActive = voice->isVoiceActive();
-            if (voiceActive) {
-                voiceIndex = i;
-                msg << "voice: " << voiceIndex << ", startNote: " << midiNote << "\n";
-                Logger::getCurrentLogger()->writeToLog(msg);
-                break;
+            if (voice->isVoiceActive())
+            {
+                activeVoices.add(i);
             }
         }
+
+        msg << "Active voices: ";
+
+        for (auto index : activeVoices)
+            msg << index << ", ";
+
+        msg << "\n";
+
+        DBG(msg);
+
+
+
+        // Print the last active voice
+        //for (int i = numVoices - 1; i >= 0; i--)
+        //{
+        //    voice = voices[i];
+        //    if (voice->isVoiceActive()) {
+        //        voiceIndex = i;
+        //        msg << "voice: " << voiceIndex << ", startNote: " << midiNote << "\n";
+        //        DBG(msg);
+        //        break;
+        //    }
+        //}
     }
 
     AudioProcessorValueTreeState& parameters;
