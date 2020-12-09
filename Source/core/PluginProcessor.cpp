@@ -176,8 +176,9 @@ void DrumProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
         synth[midiChannel]->setCurrentPlaybackSampleRate(lastSampleRate);
 
         // If host changes block size while plugin is running,
-        // update size and recreate bufferswith new one.
-        if (pluginIsInit && lastBlockSize != samplesPerBlock) {
+        // update size and recreate buffers with the new one.
+        if (pluginIsInit && lastBlockSize != samplesPerBlock)
+        {
             buffers.clear();
             buffersAllocated = false;
         }
@@ -258,6 +259,12 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuff
         // Fill each synth buffer
         for (auto i = 0; i < maxOutputs; i++)
         {
+            if (checkSoloEnabled() && !checkSoloChannel(i))
+            {
+                //appy gain ramp to zero
+                continue;
+            }
+
             currentBuffer = buffers[i];
 
             if (currentBuffer == nullptr)
@@ -270,7 +277,12 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuff
 
             // Add to main output buffer
             for (auto ch = 0; ch < numChannels; ch++)
-                buffer.addFrom(ch, 0, currentBuffer->getAudioSampleBuffer()->getReadPointer(ch), numSamples);
+                buffer.addFrom(
+                    ch,
+                    0,
+                    currentBuffer->getAudioSampleBuffer()->getReadPointer(ch),
+                    numSamples
+                );
         }
     }
 
@@ -339,6 +351,7 @@ void DrumProcessor::attachChannelParams(int midiChannel)
         for (auto i = 0; i < numVoices; i++)
         {
             auto currentVoice = static_cast<DrumVoice*>(synth[midiChannel]->getVoice(i));
+            auto currentSoloChannel = soloChannels[midiChannel];
             auto sampleRate = currentVoice->getSampleRate();
 
             // Level
@@ -354,11 +367,6 @@ void DrumProcessor::attachChannelParams(int midiChannel)
             // Mute
             paramID << "p";
             currentVoice->muteEnabled = parameters.getRawParameterValue(paramID << channelName << "Mute");
-            paramID.clear();
-
-            // Solo
-            paramID << "p";
-            currentVoice->soloEnabled = parameters.getRawParameterValue(paramID << channelName << "Solo");
             paramID.clear();
 
             // Learn
@@ -395,9 +403,6 @@ void DrumProcessor::attachChannelParams(int midiChannel)
     }
 }
 
-/*
-    Check if there are buffers to free
-*/
 void DrumProcessor::checkForBuffersToFree()
 {
     // Iterate in reverse to avoid corrupting the array index access if we remove items
@@ -408,4 +413,31 @@ void DrumProcessor::checkForBuffersToFree()
         if (buffer->getReferenceCount() == 2)
             buffers.remove (i);
     }
+}
+
+bool DrumProcessor::checkSoloEnabled()
+{
+
+    // Check if solo is enabled
+    for (auto index = 0; index < maxOutputs; index++)
+    {
+        juce::String paramId = "p";
+        auto value = parameters.getRawParameterValue(paramId << outputs[index] << "Solo");
+
+        //auto value = ch->load();
+        if (value->load() > 0.5f)
+            return true;
+    }
+
+    return false;
+}
+
+bool DrumProcessor::checkSoloChannel(int index)
+{
+    juce::String paramId = "p";
+    auto value = parameters.getRawParameterValue(paramId << outputs[index] << "Solo");
+    if (value->load() > 0.5f)
+        return true;
+
+    return false;
 }

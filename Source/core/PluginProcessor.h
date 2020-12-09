@@ -1,43 +1,10 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <JuceHeader.h>
 #include "../core/PluginEditor.h"
 #include "DrumSynth.h"
 #include "../utils/DrumsetXmlHandler.h"
-
-
-class ReferenceCountedBuffer : public juce::ReferenceCountedObject
-{
-public:
-    typedef juce::ReferenceCountedObjectPtr<ReferenceCountedBuffer> Ptr;
-
-    ReferenceCountedBuffer (const juce::String& nameToUse,
-                            int numChannels,
-                            int numSamples)
-        : name (nameToUse),
-        buffer (numChannels, numSamples)
-    {
-        DBG (juce::String ("Buffer named '") + name + "' constructed. numChannels = " + juce::String (numChannels) + ", numSamples = " + juce::String (numSamples));
-    }
-
-    ~ReferenceCountedBuffer()
-    {
-        DBG (juce::String ("Buffer named '") + name + "' destroyed");
-    }
-
-    juce::AudioSampleBuffer* getAudioSampleBuffer()
-    {
-        return &buffer;
-    }
-
-    int position = 0;
-
-private:
-    juce::String name;
-    juce::AudioSampleBuffer buffer;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReferenceCountedBuffer)
-};
+#include "../utils/ReferenceCountedBuffer.h"
 
 class DrumProcessor : public AudioProcessor
 {
@@ -98,14 +65,27 @@ private:
     */
     void attachChannelParams(int i);
 
+    /*
+    * Returns true if the channel at the given
+    * index has solo enabled, false otherwise.
+    */
+    bool checkSoloChannel(int index);
+
+    /*
+    * Returns true if solo is enabled on some channel,
+    * false otherwise.
+    */
+    bool checkSoloEnabled();
     // Check if there are buffers to free
     void checkForBuffersToFree();
+
 
     juce::ReferenceCountedArray<ReferenceCountedBuffer> buffers;
     ReferenceCountedBuffer::Ptr currentBuffer;
     juce::AudioProcessorValueTreeState parameters;
     DrumsetXmlHandler drumsetInfo;
     //UndoManager undoManager;
+    Array<std::atomic<float>*> soloChannels;
     int maxOutputs;
     bool buffersAllocated = false;
     bool pluginIsInit = false;

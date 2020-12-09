@@ -169,8 +169,8 @@ private:
     */
     void voicesToLog(int midiNote, float velocity)
     {
-        if (velocity > 0.0f)
-            DBG("                     <<<<<< note on");
+        //if (velocity > 0.0f)
+        //    DBG("                     <<<<<< note on");
 
         int voiceIndex;
         int numVoices = getNumVoices();
@@ -187,7 +187,7 @@ private:
             }
         }
 
-        msg << "Active voices: ";
+        msg << chName << " active voices: ";
 
         for (auto index : activeVoices)
             msg << index << ", ";
@@ -214,8 +214,8 @@ private:
     SynthesiserVoice* voice;
     std::unique_ptr<File> file;
     std::atomic<float>* learnEnabled;
-    bool shouldStealNotes = true;
     bool mutingEnabled = false;
+    bool shouldStealNotes = false;
     String chName;
     int note;
 

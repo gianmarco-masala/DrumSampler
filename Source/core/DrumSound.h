@@ -4,12 +4,19 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
 #include "DrumSynth.h"
+#include "../utils/ReferenceCountedBuffer.h"
 
 class DrumSound
     : public SynthesiserSound
     , private Thread
 {
 public:
+    enum
+    {
+        midiRootNote = 60,
+        maxSampleLengthSeconds = 30
+    };
+
     DrumSound() : Thread("DrumSound Thread")
     {
         formatManager.registerBasicFormats();
@@ -58,7 +65,11 @@ public:
 
     bool appliesToChannel(int midiChannel) override { return true; }
 
-    File workingDirectory;
+    std::unique_ptr<AudioFormatReader> reader;
+    //std::unique_ptr<AudioBuffer<float>> data;
+    ReferenceCountedBuffer::Ptr buffer;
+    int lenght = 0;
+
 
 private:
     /*
@@ -102,13 +113,15 @@ private:
         DBG(msg);
 
         isPathSet = true;
-    }
-    //cartella kit
+    
+     // Struttura file:   
+     //cartella kit
         // Cartella instrument
             //	cartella articulation
                 //	file wav ordinati per mic velocity e indice
 
     // in base a cosa trovo dentro la cartella mi ricavo num velocity ranges e round robin 
+    }
 
 
     /*
@@ -126,15 +139,28 @@ private:
                 if (reader->sampleRate > 0 && reader->lengthInSamples > 0)
                 {
                     lenght = (int) reader->lengthInSamples;
+                    auto duration = (float) reader->lengthInSamples / reader->sampleRate;
 
-                    data.reset(new AudioBuffer<float>(jmin(2, (int) reader->numChannels), lenght + 4));
+                    if (duration < maxSampleLengthSeconds)
+                    {
+                        //data.reset(new AudioBuffer<float>(jmin(2, (int) reader->numChannels), lenght + 4));
+                        ReferenceCountedBuffer::Ptr newBuffer = new ReferenceCountedBuffer (file.getFileName(),
+                                                                                        (int) reader->numChannels,
+                                                                                        (int) reader->lengthInSamples);
+                        reader->read(newBuffer->getAudioSampleBuffer(),
+                                     0,
+                                     lenght,
+                                     0,
+                                     true,
+                                     true);
 
-                    reader->read(data.get(),
-                        0,
-                        lenght,
-                        0,
-                        true,
-                        true);
+                        buffer = newBuffer;
+                    }
+                    else
+                    {
+                        jassertfalse; // cannot add files longer than maxSampleLengthSeconds
+                    }
+
                 }
             }
             else
@@ -144,19 +170,15 @@ private:
         }
     }
 
-    friend class DrumVoice;
+    //friend class DrumVoice;
 
     AudioFormatManager formatManager;
-    std::unique_ptr<AudioFormatReader> reader;
-    std::unique_ptr<AudioBuffer<float>> data;
+    File workingDirectory;
     BigInteger midiNotes;
     Range<float> velocity;
     String path, chName;
     int index;
     int playingMidiNote = 0;
-    int midiRootNote = 60;
-    int maxSampleLengthSeconds = 30;
-    int lenght = 0;
     bool isPathSet = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSound)
@@ -171,7 +193,7 @@ public:
 
     ~DrumVoice() { }
 
-    /* 
+    /*
     * Checks if given sound has correct DrumSound type.
     * Returns nullptr otherwise.
     * Overrides juce:Synthesiser method
@@ -200,7 +222,7 @@ public:
     }
 
     /*
-    * Stops the current playing note. 
+    * Stops the current playing note.
     * We're actually not using this because it does not fit plugin's goal
     */
     void stopNote(float velocity, bool allowTailOff) override
@@ -217,9 +239,16 @@ public:
     {
         if (auto* playingSound = static_cast<DrumSound*> (getCurrentlyPlayingSound().get()))
         {
-            auto& data = *playingSound->data;
+            ReferenceCountedBuffer::Ptr retainedCurrentBuffer (playingSound->buffer);
+
+            if (retainedCurrentBuffer == nullptr)
+            {
+                outputBuffer.clear();
+                return;
+            }
+
+            auto& data = *playingSound->buffer->getAudioSampleBuffer();
             isMuteEnabled = *muteEnabled > 0.5f ? true : false;
-            isSoloEnabled = *soloEnabled > 0.5f ? true : false;
             auto curPan = pan->load();
             auto curGain = isMuteEnabled ? 0.0f : level->load();
 
@@ -291,7 +320,6 @@ public:
     std::atomic<float>* coarse;
     std::atomic<float>* fine;
     std::atomic<float>* muteEnabled;
-    std::atomic<float>* soloEnabled;
     float prevGain;
 
 private:
