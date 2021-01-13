@@ -243,7 +243,6 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuff
     auto totalNumOutputChannels = getMainBusNumOutputChannels();
     auto numSamples = buffer.getNumSamples();
     auto numChannels = buffer.getNumChannels();
-    //auto busCount = getBusCount(false);
 
     // Clear buffer before fill it
     for (auto i = 0; i < totalNumOutputChannels; i++)
@@ -256,31 +255,34 @@ void DrumProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiBuff
 
     if (buffersAllocated) // ignore synth buffers if not allocated yet
     {
+        checkForBuffersToFree();
+
         // Fill each synth buffer
         for (auto i = 0; i < maxOutputs; i++)
         {
             if (checkSoloEnabled() && !checkSoloChannel(i))
             {
-                //appy gain ramp to zero
+                // apply gain ramp to zero
                 continue;
             }
 
             currentBuffer = buffers[i];
 
             if (currentBuffer == nullptr)
-                jassertfalse; // currentBuffer has to exist. @todo: gestire eccezione
+                jassertfalse; // currentBuffer has to exist. @todo: handle exception
 
-            currentBuffer->getAudioSampleBuffer()->clear();
+            auto curBuffer = currentBuffer->getAudioSampleBuffer();
+            curBuffer->clear();
 
             // Pass midi messages to each synth so they can fill their buffer
-            synth[i]->renderNextBlock(*currentBuffer->getAudioSampleBuffer(), midiBuffer, 0, buffer.getNumSamples());
+            synth[i]->renderNextBlock(*curBuffer, midiBuffer, 0, buffer.getNumSamples());
 
             // Add to main output buffer
             for (auto ch = 0; ch < numChannels; ch++)
                 buffer.addFrom(
                     ch,
                     0,
-                    currentBuffer->getAudioSampleBuffer()->getReadPointer(ch),
+                    curBuffer->getReadPointer(ch),
                     numSamples
                 );
         }
@@ -342,7 +344,7 @@ void DrumProcessor::attachChannelParams(int midiChannel)
 {
     String paramID;
 
-    // Parametri Canali
+    // Channel params
     auto channelName = outputs[midiChannel];
     auto numVoices = synth[midiChannel]->getNumVoices();
 
@@ -383,22 +385,6 @@ void DrumProcessor::attachChannelParams(int midiChannel)
             paramID << "p";
             currentVoice->fine = parameters.getRawParameterValue(paramID << channelName << "Fine");
             paramID.clear();
-
-            //paramID << "e";
-            ////				auto env = currentVoice->env;
-            //auto curAttack = parameters.getRawParameterValue(paramID << channelName << "Attack");
-            ////				env->setAttackRate(*curAttack * sampleRate);
-            //paramID.clear();
-
-            //paramID << "e";
-            //auto curHold = parameters.getRawParameterValue(paramID << channelName << "Hold");
-            ////				env->setDecayRate(*curHold * sampleRate);
-            //paramID.clear();
-
-            //paramID << "e";
-            //auto curRelease = parameters.getRawParameterValue(paramID << channelName << "Release");
-            ////				env->setReleaseRate(*curRelease * sampleRate);
-            //paramID.clear();
         }
     }
 }

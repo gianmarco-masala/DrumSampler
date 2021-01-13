@@ -172,11 +172,11 @@ private:
         //if (velocity > 0.0f)
         //    DBG("                     <<<<<< note on");
 
-        int voiceIndex;
+        int voiceIndex = 0;
         int numVoices = getNumVoices();
         String msg;
 
-        // Print all active voices
+        // Prints all active voices
         Array<int> activeVoices;
         for (int i = 0; i < numVoices; i++)
         {
@@ -196,7 +196,7 @@ private:
 
         DBG(msg);
 
-        // Print the last active voice
+        // Prints only the last active voice
         //for (int i = numVoices - 1; i >= 0; i--)
         //{
         //    voice = voices[i];
@@ -221,13 +221,3 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumSynth)
 };
-
-//kit
-//	instrument
-//		polyphony voice management
-//			articulations
-//				velocity mapping
-//				round robin mapping (random exclusive)
-//				microphone mapping (rientri)
-
-// informarsi su lettura file interleaved (file unico dal quale fare dispatch delle voci) come metodo alternativo ai tanti file di rientri.

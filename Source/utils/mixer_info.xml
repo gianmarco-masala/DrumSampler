@@ -1,6 +1,4 @@
 <mixer>
-
 	<channel index="0" name="Kick" status="active"></channel>
 	<channel index="1" name="Snare" status="active"></channel>
-
 </mixer>

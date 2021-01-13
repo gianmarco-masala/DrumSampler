@@ -12,7 +12,7 @@ public:
 
         if (path.existsAsFile())
         {
-            auto drumsetInfo = new XmlDocument(path);
+            drumsetInfo = new XmlDocument(path);
             auto mixer = drumsetInfo->getDocumentElement();
 
             if (mixer->hasTagName("mixer"))
@@ -43,16 +43,18 @@ public:
     }
 
     ~DrumsetXmlHandler()
-    { }
+    {
+        drumsetInfo = nullptr;
+    }
 
     /*
-        Get active output channel names as StringArray
+    *   Get active output channel names as StringArray
     */
     StringArray DrumsetXmlHandler::getActiveOutputs() { return outputs; }
 
 private:
     File file;
     StringArray outputs;
-
+    XmlDocument *drumsetInfo;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrumsetXmlHandler)
 };

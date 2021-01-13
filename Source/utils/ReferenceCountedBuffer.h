@@ -26,7 +26,7 @@ public:
         return &buffer;
     }
 
-    int position = 0;
+    double position = 0.0;
 
 private:
     juce::String name;

@@ -66,7 +66,6 @@ public:
     bool appliesToChannel(int midiChannel) override { return true; }
 
     std::unique_ptr<AudioFormatReader> reader;
-    //std::unique_ptr<AudioBuffer<float>> data;
     ReferenceCountedBuffer::Ptr buffer;
     int lenght = 0;
 
@@ -83,6 +82,7 @@ private:
             {
                 setPath();
                 readFromPath(path);
+                isPathSet = true;
             }
             wait(500);
         }
@@ -97,12 +97,8 @@ private:
         auto parentDir = workingDirectory.getCurrentWorkingDirectory();
         auto dir = parentDir.getChildFile("../../../../../Resources/Samples");
 
-        // Formato nome file: NomePezzo_articolazione_indice_velocity.estensione
-        // NomePezzo: Kick, Snare, Hi-Hat ...
-        // indice: 1, 2, 3 ...
-        // velocity: il limite inferiore del range
-        // estensione: wav
-
+        // Formato nome file: PieceName_index_velocity.aif
+        // velocity: the lowest value of the range
         path << dir.getFullPathName() << dir.getSeparatorChar()
             << chName << "_"
             << index << "_"
@@ -111,16 +107,6 @@ private:
 
         msg << "\nLoading Sample: \n" << path << "\n";
         DBG(msg);
-
-        isPathSet = true;
-    
-     // Struttura file:   
-     //cartella kit
-        // Cartella instrument
-            //	cartella articulation
-                //	file wav ordinati per mic velocity e indice
-
-    // in base a cosa trovo dentro la cartella mi ricavo num velocity ranges e round robin 
     }
 
 
@@ -143,7 +129,6 @@ private:
 
                     if (duration < maxSampleLengthSeconds)
                     {
-                        //data.reset(new AudioBuffer<float>(jmin(2, (int) reader->numChannels), lenght + 4));
                         ReferenceCountedBuffer::Ptr newBuffer = new ReferenceCountedBuffer (file.getFileName(),
                                                                                         (int) reader->numChannels,
                                                                                         (int) reader->lengthInSamples);
@@ -170,14 +155,14 @@ private:
         }
     }
 
-    //friend class DrumVoice;
+    friend class DrumVoice;
 
     AudioFormatManager formatManager;
     File workingDirectory;
     BigInteger midiNotes;
     Range<float> velocity;
     String path, chName;
-    int index;
+    int index = 0;
     int playingMidiNote = 0;
     bool isPathSet = false;
 
@@ -247,7 +232,7 @@ public:
                 return;
             }
 
-            auto& data = *playingSound->buffer->getAudioSampleBuffer();
+            auto& data = *retainedCurrentBuffer->getAudioSampleBuffer();
             isMuteEnabled = *muteEnabled > 0.5f ? true : false;
             auto curPan = pan->load();
             auto curGain = isMuteEnabled ? 0.0f : level->load();
